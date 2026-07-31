@@ -28,6 +28,8 @@ let displayConfig = { orientationOffsetDeg: 90, footprintAnchor: "center", scale
 let activeImage = null;
 let imageAdjustments = {};
 let currentPage = 0;
+const A = window.A;
+
 const PAGE_SIZE = 30;
 const IMAGE_FILL_MAX_FOV_DEG = 18;
 const MAX_IMAGE_FILLS = 12;
@@ -691,7 +693,12 @@ function renderCurrentPage() {
 
 async function loadImages() {
   imageCount.textContent = "Connecting to AstroBin...";
-  const response = await fetch("/api/images");
+  let response;
+  try {
+    response = await fetch("/api/images");
+  } catch {
+    throw new Error("The local mapper server is not reachable. Keep the launcher window open, then reload this page.");
+  }
   if (!response.ok) {
     const problem = await response.json().catch(() => ({ error: response.statusText }));
     throw new Error(problem.error || response.statusText);
@@ -707,8 +714,15 @@ async function loadImages() {
 }
 
 async function boot() {
-  if (window.A?.init?.then) {
-    await window.A.init;
+  if (!window.A) {
+    throw new Error("The Aladin Lite sky viewer could not be loaded. Check the launcher window and server.log, then reload this page.");
+  }
+  if (window.A.init?.then) {
+    try {
+      await window.A.init;
+    } catch {
+      throw new Error("The Aladin Lite sky viewer could not start. Check the launcher window and server.log, then reload this page.");
+    }
   }
   loadImageAdjustments();
   loadDisplayConfig({});
