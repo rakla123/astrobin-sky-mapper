@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1 - 2026-07-31
+
+- Bundle and serve Aladin Lite 3.8.2 locally to avoid browser-side CDN fetch failures during startup.
+- Permit Aladin Lite's embedded WebAssembly data URL in the local content-security policy.
+- Permit WebAssembly compilation with the narrow `wasm-unsafe-eval` policy source required by Aladin Lite.
+- Add clear error messages when the local server or Aladin runtime is unavailable.
+- Log failed local requests to `server.log` without exposing API credentials.
+
 ## 1.1.0 - 2026-07-31
 
 - Bind the server exclusively to `127.0.0.1`.
@@ -16,4 +24,3 @@
 ## 1.0.0 - 2026-06-17
 
 - Initial local AstroBin sky projection and optional ASTAP WCS workflow.
-

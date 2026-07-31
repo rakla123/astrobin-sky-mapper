@@ -38,6 +38,7 @@ The Node.js server itself is portable, but the convenience and solver scripts ar
 5. On first use, the launcher creates `config.json` from `config.example.json` and opens it in Notepad.
 6. Enter your own AstroBin username, API key, and API secret, save the file, and return to the launcher.
 7. The application opens at `http://127.0.0.1:8787` unless another port is configured.
+8. Keep the launcher window open while using the mapper. Closing it stops the local server.
 
 Alternatively, start it from a terminal:
 
@@ -65,6 +66,14 @@ Copy `config.example.json` to `config.json`. Never publish or share `config.json
 ```
 
 The library value is optional. When it is blank, the mapper requests images for the configured user. AstroBin's legacy API does not expose or filter all library/collection metadata consistently, so the application also performs a conservative local metadata match when that information is available.
+
+The `username` value must be the AstroBin account username, not the displayed profile alias. For the FlapAstro account this is `Rakla1073`.
+
+### Network errors
+
+The mapper bundles Aladin Lite 3.8.2 and serves it from the local server, so startup no longer depends on downloading the viewer runtime from the CDS website. Internet access is still required for AstroBin data and sky-survey tiles. If the page reports that the local server is unreachable, keep the launcher window open and reload the page. For other failures, inspect `server.log` in the application folder; version 1.1.1 records the failed local request and a concise error without writing API credentials.
+
+Aladin Lite is developed by CDS and is included under its LGPL-3.0-or-later license. Its license text is distributed in `public/vendor/aladin/LICENSE`.
 
 Environment variables can override configuration values:
 
@@ -169,4 +178,3 @@ Copyright 2026 FlapAstro.
 The project is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). Personal and other noncommercial uses permitted by that license are allowed; commercial use is restricted.
 
 The software is provided **as is**, without warranty or condition. Suitability, configuration, API compliance, plate-solving results, and use of the software remain solely the user's responsibility.
-

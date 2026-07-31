@@ -1299,7 +1299,7 @@ function applyCachedWcs(image, normalized, wcsCache) {
 }
 
 const SECURITY_HEADERS = {
-  "content-security-policy": "default-src 'self'; script-src 'self' https://aladin.cds.unistra.fr; style-src 'self' 'unsafe-inline' https://aladin.cds.unistra.fr; img-src 'self' data: blob: https:; connect-src 'self' https:; font-src 'self' data: https:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+  "content-security-policy": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' data: https:; font-src 'self' data: https:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
   "cross-origin-opener-policy": "same-origin",
   "referrer-policy": "strict-origin-when-cross-origin",
   "x-content-type-options": "nosniff"
@@ -1669,7 +1669,7 @@ function astrobinListUrl(extraParams = {}) {
 async function astrobinRequest(url) {
   const headers = {
     "accept": "application/json",
-    "user-agent": "astrobin-sky-mapper/1.1 (+https://github.com/rakla123/astrobin-sky-mapper)"
+    "user-agent": "astrobin-sky-mapper/1.1.1 (+https://github.com/rakla123/astrobin-sky-mapper)"
   };
 
   const response = await fetchAstrobinResource(url, { headers }, REQUEST_TIMEOUT_MS);
@@ -2054,6 +2054,7 @@ async function handleRequest(req, res) {
     if (!requireMethod(req, res, req.method === "HEAD" ? "HEAD" : "GET")) return;
     sendFile(req, res, decodeURIComponent(url.pathname));
   } catch (error) {
+    console.error(`[${new Date().toISOString()}] ${req.method} ${req.url}: ${error.message}`);
     sendJson(res, error.statusCode || 500, { error: error.message });
   }
 }
