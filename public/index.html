@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AstroBin Sky Mapper</title>
+    <link rel="stylesheet" href="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.min.css">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="sky-stage" aria-label="AstroBin sky projection">
+        <div id="aladin"></div>
+        <svg id="footprint-svg" class="footprint-svg" aria-hidden="true"></svg>
+        <div id="thumb-layer" class="thumb-layer"></div>
+        <div class="topbar">
+          <div>
+            <p class="eyebrow">AstroBin Sky Mapper</p>
+            <h1 id="account-title">AstroBin account</h1>
+          </div>
+          <div class="status-pills">
+            <span id="library-pill">Library: not configured</span>
+            <span id="image-count">Loading images...</span>
+            <span id="observer-pill">0, 0 - 0 m</span>
+            <div class="page-controls" aria-label="Image pages">
+              <button id="previous-page" type="button" aria-label="Previous image page">Previous</button>
+              <span id="page-status">Page 1 of 1</span>
+              <button id="next-page" type="button" aria-label="Next image page">Next</button>
+            </div>
+          </div>
+        </div>
+        <aside id="preview" class="preview" aria-live="polite">
+          <div class="preview-empty">
+            <strong>Hover over an image</strong>
+            <span>Hover over a footprint to show preview and metadata.</span>
+          </div>
+        </aside>
+        <button id="home-button" class="home-button" type="button" title="Back to overview">⌂</button>
+        <div class="calibration-panel" aria-label="Footprint calibration">
+          <label class="survey-select" title="Choose the sky background survey. Pan-STARRS is rich optical color, while 2MASS and WISE show infrared structure.">
+            <span>Sky</span>
+            <select id="survey-select" aria-label="Sky background survey">
+              <option value="P/DSS2/color">DSS2</option>
+              <option value="P/PanSTARRS/DR1/color-z-zg-g">Pan-STARRS</option>
+              <option value="P/2MASS/color">2MASS</option>
+              <option value="P/AllWISE/color">WISE</option>
+            </select>
+          </label>
+          <div class="segmented" id="anchor-controls">
+            <button type="button" data-anchor="center" title="Place each footprint around the AstroBin RA/Dec center." aria-label="Center anchor: place each footprint around the AstroBin RA and Dec center.">Center</button>
+            <button type="button" data-anchor="top-left" title="Treat the AstroBin RA/Dec coordinate as the top-left image corner. Usually only useful for testing old assumptions." aria-label="Top left anchor: treat the AstroBin RA and Dec coordinate as the top-left image corner.">Top left</button>
+          </div>
+          <div class="segmented" id="scale-controls">
+            <button type="button" data-scale-source="pixel" title="Size footprints from image pixels multiplied by AstroBin pixel scale. Best when pixel scale metadata is reliable." aria-label="Pixel scale: size footprints from image pixels multiplied by AstroBin pixel scale.">Pixel</button>
+            <button type="button" data-scale-source="field" title="Size footprints from AstroBin field radius and image aspect ratio. Useful when pixel scale is missing or inconsistent." aria-label="Field scale: size footprints from AstroBin field radius and image aspect ratio.">Field</button>
+          </div>
+          <div class="segmented" id="overlay-controls">
+            <button type="button" data-overlay-mode="outline" title="Show only footprint outlines. Fastest and clearest mode for checking placement." aria-label="Outline overlay: show only footprint outlines.">Outline</button>
+            <button type="button" data-overlay-mode="image" title="Fill selected or nearby footprints with AstroBin preview images. More visual, but preview JPEGs may be cropped or resampled." aria-label="Image overlay: fill selected or nearby footprints with AstroBin preview images.">Image</button>
+          </div>
+          <div class="segmented" id="rotation-controls">
+            <button type="button" data-rotation="0" title="Apply no global rotation offset to metadata-based footprints." aria-label="Global rotation offset 0 degrees.">0°</button>
+            <button type="button" data-rotation="90" title="Apply a 90 degree global rotation offset to metadata-based footprints." aria-label="Global rotation offset 90 degrees.">90°</button>
+            <button type="button" data-rotation="180" title="Apply a 180 degree global rotation offset to metadata-based footprints." aria-label="Global rotation offset 180 degrees.">180°</button>
+            <button type="button" data-rotation="270" title="Apply a 270 degree global rotation offset to metadata-based footprints." aria-label="Global rotation offset 270 degrees.">270°</button>
+          </div>
+        </div>
+        <p class="api-notice">This product uses the AstroBin API but is not endorsed or certified by AstroBin.</p>
+      </section>
+      <section id="unresolved-panel" class="unresolved-panel" hidden>
+        <h2>Images without sky coordinates</h2>
+        <div id="unresolved-list" class="unresolved-list"></div>
+      </section>
+    </main>
+    <script src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
