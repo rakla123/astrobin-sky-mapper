@@ -1,0 +1,42 @@
+{
+  "app": {
+    "name": "AstroBin Sky Mapper",
+    "port": 8787
+  },
+  "astrobin": {
+    "username": "your-astrobin-username",
+    "library": "your-library-or-collection-name",
+    "apiKey": "your-api-key",
+    "apiSecret": "your-api-secret"
+  },
+  "cache": {
+    "wcsCachePath": "data\\wcs-cache.json",
+    "solveRoot": "data\\solves",
+    "imageCacheMs": 300000,
+    "requestTimeoutMs": 30000,
+    "downloadTimeoutMs": 120000,
+    "maxApiPages": 10
+  },
+  "observer": {
+    "lat": 0,
+    "lon": 0,
+    "elev": 0
+  },
+  "display": {
+    "orientationOffsetDeg": 90,
+    "footprintAnchor": "center",
+    "scaleSource": "pixel",
+    "overlayMode": "outline"
+  },
+  "solver": {
+    "astapExe": "C:\\Program Files\\astap\\astap_cli.exe",
+    "timeoutMs": 180000,
+    "searchRadiusDeg": 10,
+    "fallbackSearchRadiusDeg": 30,
+    "fallbackSpeed": "slow",
+    "fallbackTolerance": 0.02,
+    "fovRetryFactors": "1,0.5,2",
+    "maxAcceptedOffsetDeg": 5,
+    "argsTemplate": "-f \"{image}\" -fov {fov} -ra {raHours} -spd {spd} -r {radius} -wcs -log"
+  }
+}

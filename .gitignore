@@ -1,0 +1,10 @@
+config.json
+server.log
+dist/
+data/solves/
+data/wcs-cache.json
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+

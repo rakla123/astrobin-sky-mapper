@@ -1,0 +1,16 @@
+{
+  "name": "astrobin-sky-mapper",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Local AstroBin sky mapper with WCS overlays, plate-solving cache, and hover previews.",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check public/app.js",
+    "test": "node --test",
+    "package:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File ./Create-Distribution.ps1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
