@@ -55,9 +55,24 @@ test("serves the application with security headers", async () => {
   assert.match(response.headers.get("content-type"), /^text\/html/);
   assert.equal(response.headers.get("x-content-type-options"), "nosniff");
   assert.match(response.headers.get("content-security-policy"), /frame-ancestors 'none'/);
+  assert.match(response.headers.get("content-security-policy"), /connect-src 'self' data: https:/);
+  assert.match(response.headers.get("content-security-policy"), /script-src 'self' 'wasm-unsafe-eval'/);
   assert.match(html, /uses the AstroBin API but is not endorsed or certified by AstroBin/);
   assert.match(html, /id="previous-page"/);
   assert.match(html, /id="next-page"/);
+  assert.match(html, /type="module" src="bootstrap\.js"/);
+  assert.doesNotMatch(html, /<script[^>]+https:\/\/aladin\.cds\.unistra\.fr/);
+});
+
+test("serves the bundled Aladin Lite runtime locally", async () => {
+  const [runtimeResponse, bootstrapResponse] = await Promise.all([
+    fetch(`${baseUrl}/vendor/aladin/aladin.js`, { method: "HEAD" }),
+    fetch(`${baseUrl}/bootstrap.js`)
+  ]);
+  assert.equal(runtimeResponse.status, 200);
+  assert.match(runtimeResponse.headers.get("content-type"), /^application\/javascript/);
+  assert.equal(bootstrapResponse.status, 200);
+  assert.match(await bootstrapResponse.text(), /import A from "\.\/vendor\/aladin\/aladin\.js"/);
 });
 
 test("limits the browser view to 30 AstroBin entries per page", async () => {
