@@ -1,0 +1,104 @@
+const assert = require("node:assert/strict");
+const { after, before, test } = require("node:test");
+
+const {
+  coordinateOrNull,
+  createAppServer,
+  normalizeWcsPolygon,
+  safeFileStem,
+  validateAstrobinUrl
+} = require("../server");
+
+let server;
+let baseUrl;
+
+before(async () => {
+  server = createAppServer();
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  baseUrl = `http://127.0.0.1:${server.address().port}`;
+});
+
+after(async () => {
+  if (server) await new Promise((resolve) => server.close(resolve));
+});
+
+test("parses numeric and sexagesimal coordinates", () => {
+  assert.equal(coordinateOrNull("12:00:00", "ra"), 180);
+  assert.equal(coordinateOrNull("-30 30 00", "dec"), -30.5);
+  assert.equal(coordinateOrNull(42.25, "ra"), 42.25);
+  assert.equal(coordinateOrNull(370, "ra"), 10);
+  assert.equal(coordinateOrNull(91, "dec"), null);
+  assert.equal(coordinateOrNull("invalid", "dec"), null);
+});
+
+test("normalizes cached WCS polygons", () => {
+  assert.deepEqual(normalizeWcsPolygon({ footprint: [[1, 2], [3, 4], [5, 6]] }), [[1, 2], [3, 4], [5, 6]]);
+  assert.equal(normalizeWcsPolygon({ footprint: [[1, 2], ["x", 4]] }), null);
+});
+
+test("sanitizes cache file stems and restricts downloads to AstroBin", () => {
+  assert.equal(safeFileStem("../M 31<>"), "M_31");
+  assert.equal(safeFileStem(".."), "image");
+  assert.equal(safeFileStem("CON"), "_CON");
+  assert.equal(validateAstrobinUrl("https://cdn.astrobin.com/image.jpg").hostname, "cdn.astrobin.com");
+  assert.throws(() => validateAstrobinUrl("https://example.com/image.jpg"), /Refusing non-AstroBin URL/);
+  assert.throws(() => validateAstrobinUrl("http://www.astrobin.com/image.jpg"), /Refusing non-AstroBin URL/);
+});
+
+test("serves the application with security headers", async () => {
+  const response = await fetch(`${baseUrl}/`);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type"), /^text\/html/);
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.match(response.headers.get("content-security-policy"), /frame-ancestors 'none'/);
+  assert.match(html, /uses the AstroBin API but is not endorsed or certified by AstroBin/);
+  assert.match(html, /id="previous-page"/);
+  assert.match(html, /id="next-page"/);
+});
+
+test("limits the browser view to 30 AstroBin entries per page", async () => {
+  const response = await fetch(`${baseUrl}/app.js`);
+  const script = await response.text();
+  assert.match(script, /const PAGE_SIZE = 30/);
+  assert.match(script, /images\.slice\(pageStart, pageStart \+ PAGE_SIZE\)/);
+});
+
+test("does not expose private filesystem paths in client configuration", async () => {
+  const response = await fetch(`${baseUrl}/api/config`);
+  const payload = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(payload.cache.wcsCachePath, undefined);
+  assert.equal(payload.cache.solveRoot, undefined);
+  assert.equal(payload.solver.astapExe, undefined);
+
+  const cacheResponse = await fetch(`${baseUrl}/api/wcs-cache`);
+  const cachePayload = await cacheResponse.json();
+  assert.equal(cachePayload.path, undefined);
+});
+
+test("requires POST and same-origin requests for solver operations", async () => {
+  const getResponse = await fetch(`${baseUrl}/api/solve?title=M31`);
+  assert.equal(getResponse.status, 405);
+  assert.equal(getResponse.headers.get("allow"), "POST");
+
+  const crossOriginResponse = await fetch(`${baseUrl}/api/solve?title=M31`, {
+    method: "POST",
+    headers: { origin: "https://example.com" }
+  });
+  assert.equal(crossOriginResponse.status, 403);
+});
+
+test("blocks encoded path traversal", async () => {
+  const response = await fetch(`${baseUrl}/%2e%2e%2fserver.js`);
+  assert.equal(response.status, 403);
+});
+
+test("supports HEAD without returning a response body", async () => {
+  const response = await fetch(`${baseUrl}/`, { method: "HEAD" });
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), "");
+});
