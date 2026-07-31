@@ -156,7 +156,7 @@ AstroBin and its content remain the property of their respective owners. No Astr
 ## Third-party acknowledgements
 
 - AstroBin provides the read-only image API and image metadata.
-- [Aladin Lite](https://aladin.cds.unistra.fr/AladinLite/doc/) and the Aladin Sky Atlas are developed by the Centre de DonnÃ©es astronomiques de Strasbourg (CDS). The application leaves the Aladin attribution intact.
+- [Aladin Lite](https://aladin.cds.unistra.fr/AladinLite/doc/) and the Aladin Sky Atlas are developed by the Centre de Données astronomiques de Strasbourg (CDS). The application leaves the Aladin attribution intact.
 - [ASTAP](https://www.hnsky.org/astap.htm) is an optional external plate solver and is not included in the distribution.
 - Development and review were assisted by OpenAI Codex.
 
@@ -169,5 +169,4 @@ Copyright 2026 FlapAstro.
 The project is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). Personal and other noncommercial uses permitted by that license are allowed; commercial use is restricted.
 
 The software is provided **as is**, without warranty or condition. Suitability, configuration, API compliance, plate-solving results, and use of the software remain solely the user's responsibility.
-
 
