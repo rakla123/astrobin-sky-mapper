@@ -1,5 +1,6 @@
 const thumbLayer = document.querySelector("#thumb-layer");
 const footprintSvg = document.querySelector("#footprint-svg");
+const celestialReferenceSvg = document.querySelector("#celestial-reference-svg");
 const preview = document.querySelector("#preview");
 const imageCount = document.querySelector("#image-count");
 const libraryPill = document.querySelector("#library-pill");
@@ -298,6 +299,140 @@ function screenPoint(ra, dec) {
   return { x: xy[0], y: xy[1] };
 }
 
+function svgElement(name, attributes = {}) {
+  const element = document.createElementNS("http://www.w3.org/2000/svg", name);
+  Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+  return element;
+}
+
+function sampledSkyPath(coordinates) {
+  const width = celestialReferenceSvg.clientWidth;
+  const height = celestialReferenceSvg.clientHeight;
+  const maxJump = Math.max(width, height) * 0.38;
+  const margin = 80;
+  const segments = [];
+  let segment = [];
+
+  const finishSegment = () => {
+    if (segment.length >= 2) segments.push(segment);
+    segment = [];
+  };
+
+  for (const [ra, dec] of coordinates) {
+    const point = screenPoint(ra, dec);
+    const nearView = point
+      && point.x >= -margin && point.x <= width + margin
+      && point.y >= -margin && point.y <= height + margin;
+    if (!nearView) {
+      finishSegment();
+      continue;
+    }
+    const previous = segment.at(-1);
+    if (previous && Math.hypot(point.x - previous.x, point.y - previous.y) > maxJump) finishSegment();
+    segment.push(point);
+  }
+  finishSegment();
+
+  return segments.map((points) => points
+    .map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+    .join(" ")).join(" ");
+}
+
+function viewCenterRaDec() {
+  const reported = aladin.getRaDec?.() || aladin.getCenter?.();
+  const reportedRa = Number(Array.isArray(reported) ? reported[0] : reported?.ra ?? reported?.RA);
+  const reportedDec = Number(Array.isArray(reported) ? reported[1] : reported?.dec ?? reported?.DE);
+  if (Number.isFinite(reportedRa) && Number.isFinite(reportedDec)) return [reportedRa, reportedDec];
+
+  const fromPixels = aladin.pix2world?.(
+    celestialReferenceSvg.clientWidth / 2,
+    celestialReferenceSvg.clientHeight / 2
+  );
+  const pixelRa = Number(fromPixels?.[0]);
+  const pixelDec = Number(fromPixels?.[1]);
+  return Number.isFinite(pixelRa) && Number.isFinite(pixelDec) ? [pixelRa, pixelDec] : [0, 0];
+}
+
+function addReferenceLabel(text, pathData) {
+  const matches = [...pathData.matchAll(/[ML](-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)];
+  const targetX = celestialReferenceSvg.clientWidth / 2;
+  const targetY = celestialReferenceSvg.clientHeight * 0.62;
+  const match = matches.length ? matches.reduce((closest, candidate) => {
+    const distance = Math.hypot(Number(candidate[1]) - targetX, Number(candidate[2]) - targetY);
+    const closestDistance = Math.hypot(Number(closest[1]) - targetX, Number(closest[2]) - targetY);
+    return distance < closestDistance ? candidate : closest;
+  }) : null;
+  if (!match) return;
+  const label = svgElement("text", {
+    x: clamp(Number(match[1]) + 7, 20, celestialReferenceSvg.clientWidth - 150),
+    y: clamp(Number(match[2]) - 7, 80, celestialReferenceSvg.clientHeight - 120),
+    class: "celestial-reference-label"
+  });
+  label.textContent = text;
+  celestialReferenceSvg.appendChild(label);
+}
+
+function renderNorthIndicator() {
+  const [centerRa, centerDec] = viewCenterRaDec();
+  const fov = Number(aladin.getFov?.()[0] || 60);
+  const northPosition = directionalOffsetRaDec(centerRa, centerDec, 0, clamp(fov / 8, 0.2, 5));
+  const centerPoint = screenPoint(centerRa, centerDec);
+  const northPoint = screenPoint(northPosition[0], northPosition[1]);
+  let direction = { x: 0, y: -1 };
+  if (centerPoint && northPoint) {
+    const dx = northPoint.x - centerPoint.x;
+    const dy = northPoint.y - centerPoint.y;
+    const length = Math.hypot(dx, dy);
+    if (length > 0.01) direction = { x: dx / length, y: dy / length };
+  }
+
+  const x = 48;
+  const y = Math.max(150, celestialReferenceSvg.clientHeight * 0.36);
+  const tipX = x + direction.x * 26;
+  const tipY = y + direction.y * 26;
+  celestialReferenceSvg.appendChild(svgElement("line", {
+    x1: x, y1: y, x2: tipX, y2: tipY, class: "north-arrow"
+  }));
+
+  const angle = Math.atan2(direction.y, direction.x);
+  const wing = 6;
+  const wingAngle = 0.6;
+  celestialReferenceSvg.appendChild(svgElement("path", {
+    d: `M${tipX.toFixed(1)},${tipY.toFixed(1)} L${(tipX - Math.cos(angle - wingAngle) * wing).toFixed(1)},${(tipY - Math.sin(angle - wingAngle) * wing).toFixed(1)} M${tipX.toFixed(1)},${tipY.toFixed(1)} L${(tipX - Math.cos(angle + wingAngle) * wing).toFixed(1)},${(tipY - Math.sin(angle + wingAngle) * wing).toFixed(1)}`,
+    class: "north-arrow"
+  }));
+
+  const label = svgElement("text", {
+    x: tipX + direction.x * 10,
+    y: tipY + direction.y * 10 + 4,
+    class: "north-indicator",
+    "text-anchor": "middle"
+  });
+  label.textContent = "N";
+  celestialReferenceSvg.appendChild(label);
+}
+
+function renderCelestialReferences() {
+  if (!aladin || !celestialReferenceSvg) return;
+  celestialReferenceSvg.replaceChildren();
+
+  const equatorCoordinates = Array.from({ length: 181 }, (_, index) => [index * 2, 0]);
+  const [meridianRa] = viewCenterRaDec();
+  const meridianCoordinates = Array.from({ length: 90 }, (_, index) => [meridianRa, -89 + index * 2]);
+  const equatorPath = sampledSkyPath(equatorCoordinates);
+  const meridianPath = sampledSkyPath(meridianCoordinates);
+
+  if (equatorPath) {
+    celestialReferenceSvg.appendChild(svgElement("path", { d: equatorPath, class: "celestial-equator" }));
+    addReferenceLabel("Celestial equator", equatorPath);
+  }
+  if (meridianPath) {
+    celestialReferenceSvg.appendChild(svgElement("path", { d: meridianPath, class: "central-meridian" }));
+    addReferenceLabel("Central RA meridian", meridianPath);
+  }
+  renderNorthIndicator();
+}
+
 function adjustedScreenPolygon(points, image) {
   const adjustment = getImageAdjustment(image);
   const scale = Number(adjustment.scaleFactor || 1);
@@ -569,6 +704,7 @@ function wireImageCalibrationControls() {
 
 function renderMarkers() {
   if (!aladin) return;
+  renderCelestialReferences();
   lastViewportSignature = viewportSignature();
   const rect = thumbLayer.getBoundingClientRect();
   const fov = Number(aladin.getFov?.()[0] || 90);
@@ -759,6 +895,16 @@ async function boot() {
     survey: displayConfig.survey || "P/DSS2/color",
     fov: 90,
     target: "M 31",
+    cooFrame: "ICRS",
+    showCooGrid: true,
+    gridOptions: {
+      enabled: true,
+      color: "rgb(205, 218, 238)",
+      opacity: 0.22,
+      thickness: 1,
+      labelSize: 11,
+      showLabels: true
+    },
     showReticle: false,
     showSimbadPointerControl: true,
     showCooGridControl: true,
@@ -817,6 +963,7 @@ async function boot() {
 
   window.addEventListener("resize", scheduleRender);
   setInterval(scheduleRenderIfViewportChanged, 900);
+  setInterval(scheduleRender, 60000);
   await loadImages();
 }
 
