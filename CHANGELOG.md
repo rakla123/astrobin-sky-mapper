@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.5 - 2026-08-01
+
+- Preserve the Aladin sky-survey background beneath the celestial reference guides.
+- Define explicit transparent overlay layers for the grid, footprints, and image thumbnails.
+
 ## 1.1.4 - 2026-08-01
 
 - Enable a discreet semi-transparent ICRS right-ascension/declination grid.

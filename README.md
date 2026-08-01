@@ -44,7 +44,7 @@ If the mapper is already running, launching it again opens the existing instance
 
 Use the **Show** selector beside the page controls to display 30, 60, 100, or all retrieved images at once. The selection is retained by the browser. Larger values can reduce responsiveness when many footprint overlays are visible.
 
-The background includes a low-opacity ICRS coordinate grid. The celestial equator is highlighted in amber, the map's central right-ascension meridian in green, and a projection-aware **N** arrow indicates celestial north. Aladin's grid button can hide or show the underlying coordinate grid.
+The sky-survey image remains visible as the background beneath a low-opacity ICRS coordinate grid. The celestial equator is highlighted in amber, the map's central right-ascension meridian in green, and a projection-aware **N** arrow indicates celestial north. Aladin's grid button can hide or show the underlying coordinate grid.
 
 Alternatively, start it from a terminal:
 
