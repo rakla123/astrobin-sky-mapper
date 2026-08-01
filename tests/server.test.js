@@ -60,6 +60,8 @@ test("serves the application with security headers", async () => {
   assert.match(html, /uses the AstroBin API but is not endorsed or certified by AstroBin/);
   assert.match(html, /id="previous-page"/);
   assert.match(html, /id="next-page"/);
+  assert.match(html, /id="page-size"/);
+  assert.match(html, /<option value="all">All<\/option>/);
   assert.match(html, /type="module" src="bootstrap\.js"/);
   assert.doesNotMatch(html, /<script[^>]+https:\/\/aladin\.cds\.unistra\.fr/);
 });
@@ -75,11 +77,13 @@ test("serves the bundled Aladin Lite runtime locally", async () => {
   assert.match(await bootstrapResponse.text(), /import A from "\.\/vendor\/aladin\/aladin\.js"/);
 });
 
-test("limits the browser view to 30 AstroBin entries per page", async () => {
+test("supports selectable image page sizes", async () => {
   const response = await fetch(`${baseUrl}/app.js`);
   const script = await response.text();
-  assert.match(script, /const PAGE_SIZE = 30/);
-  assert.match(script, /images\.slice\(pageStart, pageStart \+ PAGE_SIZE\)/);
+  assert.match(script, /const DEFAULT_PAGE_SIZE = 30/);
+  assert.match(script, /\[30, 60, 100\]/);
+  assert.match(script, /pageSize === "all"/);
+  assert.match(script, /images\.slice\(pageStart, pageStart \+ itemsPerPage\)/);
 });
 
 test("does not expose private filesystem paths in client configuration", async () => {
@@ -87,7 +91,7 @@ test("does not expose private filesystem paths in client configuration", async (
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.1.2");
+  assert.equal(payload.version, "1.1.3");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
