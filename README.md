@@ -42,6 +42,8 @@ The Node.js server itself is portable, but the convenience and solver scripts ar
 
 If the mapper is already running, launching it again opens the existing instance instead of starting a second server. If another application is using the configured port, the launcher identifies the conflict and asks you to close that application or change `app.port` in `config.json`.
 
+Use the **Show** selector beside the page controls to display 30, 60, 100, or all retrieved images at once. The selection is retained by the browser. Larger values can reduce responsiveness when many footprint overlays are visible.
+
 Alternatively, start it from a terminal:
 
 ```powershell

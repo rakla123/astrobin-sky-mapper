@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.3 - 2026-08-01
+
+- Add a persistent 30, 60, 100, or All image page-size selector.
+- Preserve the currently visible range when switching between numeric page sizes.
+
 ## 1.1.2 - 2026-08-01
 
 - Reuse an already-running AstroBin Sky Mapper instance instead of failing with `EADDRINUSE`.

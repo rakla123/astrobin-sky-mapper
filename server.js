@@ -1672,7 +1672,7 @@ function astrobinListUrl(extraParams = {}) {
 async function astrobinRequest(url) {
   const headers = {
     "accept": "application/json",
-    "user-agent": "astrobin-sky-mapper/1.1.2 (+https://github.com/rakla123/astrobin-sky-mapper)"
+    "user-agent": "astrobin-sky-mapper/1.1.3 (+https://github.com/rakla123/astrobin-sky-mapper)"
   };
 
   const response = await fetchAstrobinResource(url, { headers }, REQUEST_TIMEOUT_MS);
