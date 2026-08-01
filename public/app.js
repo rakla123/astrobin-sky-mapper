@@ -16,6 +16,7 @@ const unresolvedList = document.querySelector("#unresolved-list");
 const previousPageButton = document.querySelector("#previous-page");
 const nextPageButton = document.querySelector("#next-page");
 const pageStatus = document.querySelector("#page-status");
+const pageSizeSelect = document.querySelector("#page-size");
 
 let aladin;
 let images = [];
@@ -28,9 +29,11 @@ let displayConfig = { orientationOffsetDeg: 90, footprintAnchor: "center", scale
 let activeImage = null;
 let imageAdjustments = {};
 let currentPage = 0;
+let pageSize = 30;
 const A = window.A;
 
-const PAGE_SIZE = 30;
+const DEFAULT_PAGE_SIZE = 30;
+const PAGE_SIZE_STORAGE_KEY = "astrobinSkyPageSize";
 const IMAGE_FILL_MAX_FOV_DEG = 18;
 const MAX_IMAGE_FILLS = 12;
 
@@ -212,6 +215,29 @@ function directionalOffsetRaDec(raDeg, decDeg, eastDeg, northDeg) {
     ((ra2 * 180 / Math.PI) % 360 + 360) % 360,
     clamp(dec2 * 180 / Math.PI, -89.999, 89.999)
   ];
+}
+
+function loadPageSize() {
+  try {
+    const saved = localStorage.getItem(PAGE_SIZE_STORAGE_KEY);
+    if (saved === "all") pageSize = "all";
+    else if ([30, 60, 100].includes(Number(saved))) pageSize = Number(saved);
+  } catch {
+    pageSize = DEFAULT_PAGE_SIZE;
+  }
+  pageSizeSelect.value = String(pageSize);
+}
+
+function savePageSize() {
+  try {
+    localStorage.setItem(PAGE_SIZE_STORAGE_KEY, String(pageSize));
+  } catch {
+    /* The selection still works when browser storage is unavailable. */
+  }
+}
+
+function effectivePageSize() {
+  return pageSize === "all" ? Math.max(1, images.length) : pageSize;
 }
 
 function footprintCornerRaDec(image, uDeg, vDeg) {
@@ -660,10 +686,11 @@ function showUnresolved(unresolvedImages) {
 }
 
 function renderCurrentPage() {
-  const pageCount = Math.max(1, Math.ceil(images.length / PAGE_SIZE));
+  const itemsPerPage = effectivePageSize();
+  const pageCount = Math.max(1, Math.ceil(images.length / itemsPerPage));
   currentPage = clamp(currentPage, 0, pageCount - 1);
-  const pageStart = currentPage * PAGE_SIZE;
-  const pageImages = images.slice(pageStart, pageStart + PAGE_SIZE);
+  const pageStart = currentPage * itemsPerPage;
+  const pageImages = images.slice(pageStart, pageStart + itemsPerPage);
   const resolved = pageImages.filter((image) => image.ra !== null && image.dec !== null);
   const unresolved = pageImages.filter((image) => image.ra === null || image.dec === null);
 
@@ -726,6 +753,7 @@ async function boot() {
   }
   loadImageAdjustments();
   loadDisplayConfig({});
+  loadPageSize();
 
   aladin = A.aladin("#aladin", {
     survey: displayConfig.survey || "P/DSS2/color",
@@ -774,6 +802,14 @@ async function boot() {
   });
   nextPageButton.addEventListener("click", () => {
     currentPage += 1;
+    renderCurrentPage();
+  });
+  pageSizeSelect.addEventListener("change", () => {
+    const previousPageSize = effectivePageSize();
+    const firstVisibleIndex = currentPage * previousPageSize;
+    pageSize = pageSizeSelect.value === "all" ? "all" : Number(pageSizeSelect.value);
+    savePageSize();
+    currentPage = pageSize === "all" ? 0 : Math.floor(firstVisibleIndex / pageSize);
     renderCurrentPage();
   });
   wireCalibrationControls();

@@ -22,6 +22,15 @@
             <span id="image-count">Loading images...</span>
             <span id="observer-pill">0, 0 - 0 m</span>
             <div class="page-controls" aria-label="Image pages">
+              <label class="page-size-control" for="page-size">
+                <span>Show</span>
+                <select id="page-size" aria-label="Images per page">
+                  <option value="30">30</option>
+                  <option value="60">60</option>
+                  <option value="100">100</option>
+                  <option value="all">All</option>
+                </select>
+              </label>
               <button id="previous-page" type="button" aria-label="Previous image page">Previous</button>
               <span id="page-status">Page 1 of 1</span>
               <button id="next-page" type="button" aria-label="Next image page">Next</button>

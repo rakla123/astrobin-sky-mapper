@@ -152,7 +152,7 @@ h1 {
   gap: 8px;
 }
 
-.status-pills span {
+.status-pills > span {
   display: inline-flex;
   min-height: 32px;
   align-items: center;
@@ -177,7 +177,8 @@ h1 {
 }
 
 .page-controls span,
-.page-controls button {
+.page-controls button,
+.page-size-control {
   min-height: 32px;
   border: 0;
   border-radius: 0;
@@ -185,6 +186,32 @@ h1 {
   background: transparent;
   color: var(--muted);
   box-shadow: none;
+}
+
+.page-size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-right: 1px solid var(--line);
+}
+
+.page-size-control span {
+  min-height: auto;
+  padding: 0;
+}
+
+.page-size-control select {
+  border: 0;
+  border-radius: 5px;
+  padding: 2px 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.page-size-control select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .page-controls button {
