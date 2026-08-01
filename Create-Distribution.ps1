@@ -67,6 +67,7 @@ New-Item -ItemType Directory -Path $stageRoot | Out-Null
 $excludeNames = @(
   "config.json",
   "server.log",
+  "celestial-overlay-preview.png",
   "dist",
   "data",
   "tests",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.4 - 2026-08-01
+
+- Enable a discreet semi-transparent ICRS right-ascension/declination grid.
+- Highlight and label the celestial equator and the map's central right-ascension meridian.
+- Add a projection-aware north-direction indicator that follows map movement and zoom.
+
 ## 1.1.3 - 2026-08-01
 
 - Add a persistent 30, 60, 100, or All image page-size selector.
