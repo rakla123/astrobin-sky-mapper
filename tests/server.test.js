@@ -86,6 +86,8 @@ test("does not expose private filesystem paths in client configuration", async (
   const response = await fetch(`${baseUrl}/api/config`);
   const payload = await response.json();
   assert.equal(response.status, 200);
+  assert.equal(payload.applicationId, "astrobin-sky-mapper");
+  assert.equal(payload.version, "1.1.2");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
