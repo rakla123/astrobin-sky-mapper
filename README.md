@@ -40,6 +40,8 @@ The Node.js server itself is portable, but the convenience and solver scripts ar
 7. The application opens at `http://127.0.0.1:8787` unless another port is configured.
 8. Keep the launcher window open while using the mapper. Closing it stops the local server.
 
+If the mapper is already running, launching it again opens the existing instance instead of starting a second server. If another application is using the configured port, the launcher identifies the conflict and asks you to close that application or change `app.port` in `config.json`.
+
 Alternatively, start it from a terminal:
 
 ```powershell

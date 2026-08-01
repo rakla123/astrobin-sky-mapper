@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 - 2026-08-01
+
+- Reuse an already-running AstroBin Sky Mapper instance instead of failing with `EADDRINUSE`.
+- Detect when another application owns the configured port and show a concise remediation message.
+- Expose a non-secret application identifier and version through `/api/config` for safe launcher detection.
+
 ## 1.1.1 - 2026-07-31
 
 - Bundle and serve Aladin Lite 3.8.2 locally to avoid browser-side CDN fetch failures during startup.

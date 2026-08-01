@@ -9,6 +9,9 @@ const APP_ROOT = __dirname;
 const DEFAULT_PORT = 8787;
 const ROOT = path.join(APP_ROOT, "public");
 const CONFIG_PATH = process.env.APP_CONFIG || path.join(__dirname, "config.json");
+const PACKAGE = readJsonFile(path.join(APP_ROOT, "package.json"));
+const APPLICATION_ID = "astrobin-sky-mapper";
+const APP_VERSION = typeof PACKAGE.version === "string" ? PACKAGE.version : "unknown";
 
 function readJsonFile(filePath) {
   try {
@@ -1669,7 +1672,7 @@ function astrobinListUrl(extraParams = {}) {
 async function astrobinRequest(url) {
   const headers = {
     "accept": "application/json",
-    "user-agent": "astrobin-sky-mapper/1.1.1 (+https://github.com/rakla123/astrobin-sky-mapper)"
+    "user-agent": "astrobin-sky-mapper/1.1.2 (+https://github.com/rakla123/astrobin-sky-mapper)"
   };
 
   const response = await fetchAstrobinResource(url, { headers }, REQUEST_TIMEOUT_MS);
@@ -1881,6 +1884,8 @@ async function handleRequest(req, res) {
     if (url.pathname === "/api/config") {
       if (!requireMethod(req, res, "GET")) return;
       sendJson(res, 200, {
+        applicationId: APPLICATION_ID,
+        version: APP_VERSION,
         appName: APP_NAME,
         port: PORT,
         observer: OBSERVER,
@@ -2065,6 +2070,14 @@ function createAppServer() {
 
 if (require.main === module) {
   const server = createAppServer();
+  server.once("error", (error) => {
+    if (error.code === "EADDRINUSE") {
+      console.error(`Cannot start ${APP_NAME}: port ${PORT} is already in use.`);
+    } else {
+      console.error(`Cannot start ${APP_NAME}: ${error.message}`);
+    }
+    process.exitCode = 1;
+  });
   server.listen(PORT, HOST, () => {
     console.log(`${APP_NAME} running at http://${HOST}:${PORT}`);
   });
