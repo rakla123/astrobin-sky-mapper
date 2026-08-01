@@ -62,6 +62,7 @@ test("serves the application with security headers", async () => {
   assert.match(html, /id="next-page"/);
   assert.match(html, /id="page-size"/);
   assert.match(html, /<option value="all">All<\/option>/);
+  assert.match(html, /id="celestial-reference-svg"/);
   assert.match(html, /type="module" src="bootstrap\.js"/);
   assert.doesNotMatch(html, /<script[^>]+https:\/\/aladin\.cds\.unistra\.fr/);
 });
@@ -86,12 +87,23 @@ test("supports selectable image page sizes", async () => {
   assert.match(script, /images\.slice\(pageStart, pageStart \+ itemsPerPage\)/);
 });
 
+test("renders discreet celestial reference guides", async () => {
+  const response = await fetch(`${baseUrl}/app.js`);
+  const script = await response.text();
+  assert.match(script, /showCooGrid: true/);
+  assert.match(script, /opacity: 0\.22/);
+  assert.match(script, /Celestial equator/);
+  assert.match(script, /Central RA meridian/);
+  assert.match(script, /central-meridian/);
+  assert.match(script, /renderNorthIndicator/);
+});
+
 test("does not expose private filesystem paths in client configuration", async () => {
   const response = await fetch(`${baseUrl}/api/config`);
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.1.3");
+  assert.equal(payload.version, "1.1.4");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
