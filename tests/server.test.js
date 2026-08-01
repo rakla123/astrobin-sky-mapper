@@ -98,12 +98,20 @@ test("renders discreet celestial reference guides", async () => {
   assert.match(script, /renderNorthIndicator/);
 });
 
+test("keeps the sky survey visible beneath transparent overlays", async () => {
+  const css = await fetch(`${baseUrl}/styles.css`).then((response) => response.text());
+  assert.match(css, /#aladin\s*\{[^}]*z-index:\s*0/s);
+  assert.match(css, /\.celestial-reference-svg\s*\{[^}]*z-index:\s*1[^}]*background:\s*transparent/s);
+  assert.match(css, /\.footprint-svg\s*\{[^}]*z-index:\s*2[^}]*background:\s*transparent/s);
+  assert.match(css, /\.thumb-layer\s*\{[^}]*z-index:\s*3/s);
+});
+
 test("does not expose private filesystem paths in client configuration", async () => {
   const response = await fetch(`${baseUrl}/api/config`);
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.1.4");
+  assert.equal(payload.version, "1.1.5");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
