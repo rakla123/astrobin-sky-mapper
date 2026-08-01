@@ -35,12 +35,16 @@ body {
 }
 
 #aladin {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   background: #02050b;
 }
 
 .thumb-layer {
   position: absolute;
   inset: 0;
+  z-index: 3;
   pointer-events: none;
   overflow: hidden;
 }
@@ -48,19 +52,23 @@ body {
 .footprint-svg {
   position: absolute;
   inset: 0;
+  z-index: 2;
   width: 100%;
   height: 100%;
   overflow: hidden;
   pointer-events: none;
+  background: transparent;
 }
 
 .celestial-reference-svg {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   overflow: hidden;
   pointer-events: none;
+  background: transparent;
 }
 
 .celestial-equator,
