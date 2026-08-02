@@ -98,6 +98,19 @@ test("renders discreet celestial reference guides", async () => {
   assert.match(script, /renderNorthIndicator/);
 });
 
+test("provides a collapsible unresolved-image panel", async () => {
+  const [html, script, css] = await Promise.all([
+    fetch(`${baseUrl}/`).then((response) => response.text()),
+    fetch(`${baseUrl}/app.js`).then((response) => response.text()),
+    fetch(`${baseUrl}/styles.css`).then((response) => response.text())
+  ]);
+  assert.match(html, /id="unresolved-toggle"[^>]*aria-expanded="true"[^>]*aria-controls="unresolved-list"/);
+  assert.match(html, /id="unresolved-count"/);
+  assert.match(script, /UNRESOLVED_COLLAPSED_STORAGE_KEY/);
+  assert.match(script, /setUnresolvedPanelCollapsed/);
+  assert.match(css, /\.unresolved-panel\.is-collapsed/);
+});
+
 test("keeps the sky survey visible beneath transparent overlays", async () => {
   const css = await fetch(`${baseUrl}/styles.css`).then((response) => response.text());
   assert.match(css, /#aladin\s*\{[^}]*z-index:\s*0/s);
@@ -111,7 +124,7 @@ test("does not expose private filesystem paths in client configuration", async (
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.1.5");
+  assert.equal(payload.version, "1.1.6");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
