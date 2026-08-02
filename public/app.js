@@ -14,6 +14,8 @@ const overlayControls = document.querySelector("#overlay-controls");
 const surveySelect = document.querySelector("#survey-select");
 const unresolvedPanel = document.querySelector("#unresolved-panel");
 const unresolvedList = document.querySelector("#unresolved-list");
+const unresolvedToggle = document.querySelector("#unresolved-toggle");
+const unresolvedCount = document.querySelector("#unresolved-count");
 const previousPageButton = document.querySelector("#previous-page");
 const nextPageButton = document.querySelector("#next-page");
 const pageStatus = document.querySelector("#page-status");
@@ -35,6 +37,7 @@ const A = window.A;
 
 const DEFAULT_PAGE_SIZE = 30;
 const PAGE_SIZE_STORAGE_KEY = "astrobinSkyPageSize";
+const UNRESOLVED_COLLAPSED_STORAGE_KEY = "astrobinSkyUnresolvedCollapsed";
 const IMAGE_FILL_MAX_FOV_DEG = 18;
 const MAX_IMAGE_FILLS = 12;
 
@@ -811,6 +814,7 @@ function showUnresolved(unresolvedImages) {
     return;
   }
   unresolvedPanel.hidden = false;
+  unresolvedCount.textContent = String(unresolvedImages.length);
   unresolvedList.replaceChildren(...unresolvedImages.map((image) => {
     const link = document.createElement("a");
     link.href = image.pageUrl || "#";
@@ -819,6 +823,25 @@ function showUnresolved(unresolvedImages) {
     link.textContent = image.title;
     return link;
   }));
+}
+
+function unresolvedPanelIsCollapsed() {
+  try {
+    return sessionStorage.getItem(UNRESOLVED_COLLAPSED_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function setUnresolvedPanelCollapsed(collapsed) {
+  unresolvedPanel.classList.toggle("is-collapsed", collapsed);
+  unresolvedToggle.setAttribute("aria-expanded", String(!collapsed));
+  unresolvedToggle.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} images without sky coordinates`);
+  try {
+    sessionStorage.setItem(UNRESOLVED_COLLAPSED_STORAGE_KEY, String(collapsed));
+  } catch {
+    /* The panel remains usable when browser storage is unavailable. */
+  }
 }
 
 function renderCurrentPage() {
@@ -890,6 +913,11 @@ async function boot() {
   loadImageAdjustments();
   loadDisplayConfig({});
   loadPageSize();
+  setUnresolvedPanelCollapsed(unresolvedPanelIsCollapsed());
+
+  unresolvedToggle.addEventListener("click", () => {
+    setUnresolvedPanelCollapsed(!unresolvedPanel.classList.contains("is-collapsed"));
+  });
 
   aladin = A.aladin("#aladin", {
     survey: displayConfig.survey || "P/DSS2/color",

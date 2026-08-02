@@ -76,8 +76,14 @@
         </div>
         <p class="api-notice">This product uses the AstroBin API but is not endorsed or certified by AstroBin.</p>
       </section>
-      <section id="unresolved-panel" class="unresolved-panel" hidden>
-        <h2>Images without sky coordinates</h2>
+      <section id="unresolved-panel" class="unresolved-panel" aria-labelledby="unresolved-title" hidden>
+        <h2 id="unresolved-title">
+          <button id="unresolved-toggle" class="unresolved-toggle" type="button" aria-expanded="true" aria-controls="unresolved-list">
+            <span>Images without sky coordinates</span>
+            <span id="unresolved-count" class="unresolved-count">0</span>
+            <span class="unresolved-chevron" aria-hidden="true"></span>
+          </button>
+        </h2>
         <div id="unresolved-list" class="unresolved-list"></div>
       </section>
     </main>
