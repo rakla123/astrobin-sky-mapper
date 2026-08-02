@@ -297,6 +297,8 @@ function footprintCornerOffsets(angularWidth, angularHeight) {
 }
 
 function screenPoint(ra, dec) {
+  // The viewer is configured in ICRS, so coordinates use its active frame.
+  // Avoid the defective string-frame overload in bundled Aladin Lite 3.8.2.
   const xy = aladin.world2pix(ra, dec);
   if (!xy || !Number.isFinite(xy[0]) || !Number.isFinite(xy[1])) return null;
   return { x: xy[0], y: xy[1] };
@@ -341,6 +343,18 @@ function sampledSkyPath(coordinates) {
     .join(" ")).join(" ");
 }
 
+function sampledRange(start, end, sampleCount, coordinateFactory) {
+  const safeCount = Math.max(2, Math.floor(sampleCount));
+  return Array.from({ length: safeCount }, (_, index) => {
+    const fraction = index / (safeCount - 1);
+    return coordinateFactory(start + (end - start) * fraction);
+  });
+}
+
+function wrappedRa(ra) {
+  return ((ra % 360) + 360) % 360;
+}
+
 function viewCenterRaDec() {
   const reported = aladin.getRaDec?.() || aladin.getCenter?.();
   const reportedRa = Number(Array.isArray(reported) ? reported[0] : reported?.ra ?? reported?.RA);
@@ -349,7 +363,8 @@ function viewCenterRaDec() {
 
   const fromPixels = aladin.pix2world?.(
     celestialReferenceSvg.clientWidth / 2,
-    celestialReferenceSvg.clientHeight / 2
+    celestialReferenceSvg.clientHeight / 2,
+    "icrs"
   );
   const pixelRa = Number(fromPixels?.[0]);
   const pixelDec = Number(fromPixels?.[1]);
@@ -419,9 +434,23 @@ function renderCelestialReferences() {
   if (!aladin || !celestialReferenceSvg) return;
   celestialReferenceSvg.replaceChildren();
 
-  const equatorCoordinates = Array.from({ length: 181 }, (_, index) => [index * 2, 0]);
-  const [meridianRa] = viewCenterRaDec();
-  const meridianCoordinates = Array.from({ length: 90 }, (_, index) => [meridianRa, -89 + index * 2]);
+  const [centerRa, centerDec] = viewCenterRaDec();
+  const fov = clamp(Number(aladin.getFov?.()[0] || 60), 0.001, 360);
+  const equatorSpan = Math.min(360, Math.max(0.5, fov * 2.4));
+  const meridianSpan = Math.min(178, Math.max(0.5, fov * 2.4));
+  const sampleCount = fov >= 240 ? 721 : 361;
+  const equatorCoordinates = sampledRange(
+    centerRa - equatorSpan / 2,
+    centerRa + equatorSpan / 2,
+    sampleCount,
+    (ra) => [wrappedRa(ra), 0]
+  );
+  const meridianCoordinates = sampledRange(
+    Math.max(-89, centerDec - meridianSpan / 2),
+    Math.min(89, centerDec + meridianSpan / 2),
+    sampleCount,
+    (dec) => [wrappedRa(centerRa), dec]
+  );
   const equatorPath = sampledSkyPath(equatorCoordinates);
   const meridianPath = sampledSkyPath(meridianCoordinates);
 
@@ -566,10 +595,12 @@ function viewportSignature() {
   const center = aladin.getRaDec?.() || aladin.getCenter?.() || [];
   const centerRa = Array.isArray(center) ? center[0] : center.ra ?? center.RA;
   const centerDec = Array.isArray(center) ? center[1] : center.dec ?? center.DE;
+  const rotation = Number(aladin.getRotation?.() || 0);
   return [
     Number(fov[0] || 0).toFixed(4),
     Number(centerRa || 0).toFixed(4),
     Number(centerDec || 0).toFixed(4),
+    rotation.toFixed(3),
     thumbLayer.clientWidth,
     thumbLayer.clientHeight
   ].join("|");
@@ -941,14 +972,14 @@ async function boot() {
     showZoomControl: true
   });
 
-  ["positionChanged", "zoomChanged"].forEach((eventName) => {
+  ["positionChanged", "zoomChanged", "rotationChanged"].forEach((eventName) => {
     try {
       aladin.on(eventName, scheduleInteractiveRender);
     } catch {
       /* Aladin versions expose slightly different event sets. */
     }
   });
-  ["objectHovered", "resize"].forEach((eventName) => {
+  ["objectHovered", "resize", "resizeChanged"].forEach((eventName) => {
     try {
       aladin.on(eventName, scheduleRender);
     } catch {
@@ -990,7 +1021,7 @@ async function boot() {
   wireImageCalibrationControls();
 
   window.addEventListener("resize", scheduleRender);
-  setInterval(scheduleRenderIfViewportChanged, 900);
+  setInterval(scheduleRenderIfViewportChanged, 250);
   setInterval(scheduleRender, 60000);
   await loadImages();
 }
