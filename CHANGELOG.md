@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.6 - 2026-08-02
+
+- Make the images-without-coordinates panel collapsible with an accessible header control.
+- Display the number of unresolved images and retain the collapsed state for the browser session.
+- Keep the compact panel available on mobile instead of hiding it completely.
+
 ## 1.1.5 - 2026-08-01
 
 - Preserve the Aladin sky-survey background beneath the celestial reference guides.

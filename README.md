@@ -46,6 +46,8 @@ Use the **Show** selector beside the page controls to display 30, 60, 100, or al
 
 The sky-survey image remains visible as the background beneath a low-opacity ICRS coordinate grid. The celestial equator is highlighted in amber, the map's central right-ascension meridian in green, and a projection-aware **N** arrow indicates celestial north. Aladin's grid button can hide or show the underlying coordinate grid.
 
+When a page contains AstroBin entries without usable sky coordinates, they are listed in a collapsible information panel. Its header shows the number of affected entries, and the expanded or collapsed state is remembered for the current browser session.
+
 Alternatively, start it from a terminal:
 
 ```powershell
