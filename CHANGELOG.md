@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.8 - 2026-08-02
+
+- Remove the raw AstroBin astrometry-field inventory from the object information panel.
+- Make the overview button restore an unrotated, full-sky Hammer-Aitoff view instead of a 90-degree field centered on the first image.
+
 ## 1.1.7 - 2026-08-02
 
 - Keep the highlighted celestial equator, central RA meridian, and north indicator synchronized with Aladin rotation events.
