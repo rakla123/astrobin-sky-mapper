@@ -102,6 +102,20 @@ test("renders discreet celestial reference guides", async () => {
   assert.match(script, /rotationChanged/);
 });
 
+test("hides raw astrometry field names and restores a whole-sky overview", async () => {
+  const [html, script] = await Promise.all([
+    fetch(`${baseUrl}/`).then((response) => response.text()),
+    fetch(`${baseUrl}/app.js`).then((response) => response.text())
+  ]);
+  assert.doesNotMatch(script, /Astrometry fields:/);
+  assert.match(html, /aria-label="Back to whole-sky overview"/);
+  assert.match(script, /const OVERVIEW_FOV_DEG = 360/);
+  assert.match(script, /aladin\.setProjection\("AIT"\)/);
+  assert.match(script, /aladin\.gotoRaDec\(180, 0\)/);
+  assert.match(script, /aladin\.setRotation\(0\)/);
+  assert.match(script, /aladin\.setFoV\(OVERVIEW_FOV_DEG\)/);
+});
+
 test("provides a collapsible unresolved-image panel", async () => {
   const [html, script, css] = await Promise.all([
     fetch(`${baseUrl}/`).then((response) => response.text()),
@@ -128,7 +142,7 @@ test("does not expose private filesystem paths in client configuration", async (
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.1.7");
+  assert.equal(payload.version, "1.1.8");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
