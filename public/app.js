@@ -40,6 +40,7 @@ const PAGE_SIZE_STORAGE_KEY = "astrobinSkyPageSize";
 const UNRESOLVED_COLLAPSED_STORAGE_KEY = "astrobinSkyUnresolvedCollapsed";
 const IMAGE_FILL_MAX_FOV_DEG = 18;
 const MAX_IMAGE_FILLS = 12;
+const OVERVIEW_FOV_DEG = 360;
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -153,7 +154,6 @@ function showPreview(image) {
         <button type="button" data-image-reset="true">Reset</button>
       </div>
       <p class="calibration-note">Outline uses AstroBin astrometry. Image fill uses the retrieved preview and may not match if AstroBin served a rotated, cropped, or resampled derivative.</p>
-      ${image.solution?.availableFields?.length ? `<p class="calibration-note">Astrometry fields: ${escapeHtml(image.solution.availableFields.join(", "))}</p>` : ""}
       ${image.description ? `<p class="preview-description">${escapeHtml(compactDescription(image.description))}</p>` : ""}
       ${image.pageUrl ? `<a href="${escapeHtml(image.pageUrl)}" target="_blank" rel="noreferrer">Open on AstroBin</a>` : ""}
     </div>
@@ -998,8 +998,10 @@ async function boot() {
   }
 
   homeButton.addEventListener("click", () => {
-    aladin.setFoV(90);
-    if (markers[0]) aladin.gotoRaDec(markers[0].image.ra, markers[0].image.dec);
+    aladin.setProjection("AIT");
+    aladin.gotoRaDec(180, 0);
+    aladin.setRotation(0);
+    aladin.setFoV(OVERVIEW_FOV_DEG);
   });
   previousPageButton.addEventListener("click", () => {
     currentPage -= 1;
