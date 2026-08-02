@@ -96,6 +96,10 @@ test("renders discreet celestial reference guides", async () => {
   assert.match(script, /Central RA meridian/);
   assert.match(script, /central-meridian/);
   assert.match(script, /renderNorthIndicator/);
+  assert.match(script, /world2pix\(ra, dec\)/);
+  assert.match(script, /sampledRange/);
+  assert.match(script, /getRotation/);
+  assert.match(script, /rotationChanged/);
 });
 
 test("provides a collapsible unresolved-image panel", async () => {
@@ -124,7 +128,7 @@ test("does not expose private filesystem paths in client configuration", async (
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.1.6");
+  assert.equal(payload.version, "1.1.7");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
