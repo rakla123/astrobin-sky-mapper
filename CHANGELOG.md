@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.7 - 2026-08-02
+
+- Keep the highlighted celestial equator, central RA meridian, and north indicator synchronized with Aladin rotation events.
+- Adapt coordinate sampling to the current field of view for accurate paths at narrow zoom levels.
+- Reproject all custom celestial references through the configured ICRS view and include rotation in viewport-change detection.
+
 ## 1.1.6 - 2026-08-02
 
 - Make the images-without-coordinates panel collapsible with an accessible header control.
