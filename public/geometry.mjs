@@ -1,6 +1,27 @@
 export function projectedPathData(points, width, height, options = {}) {
-  const maxJump = Number(options.maxJump) || Math.max(width, height) * 0.38;
   const margin = Number(options.margin) || 100;
+  const viewportJumpLimit = Math.max(width, height) * 0.38;
+  const nearViewPoints = points.map((point) => point
+    && Number.isFinite(point.x) && Number.isFinite(point.y)
+    && point.x >= -margin && point.x <= width + margin
+    && point.y >= -margin && point.y <= height + margin
+    ? point
+    : null);
+  const neighborDistances = [];
+  for (let index = 1; index < nearViewPoints.length; index += 1) {
+    const from = nearViewPoints[index - 1];
+    const to = nearViewPoints[index];
+    if (from && to) neighborDistances.push(Math.hypot(to.x - from.x, to.y - from.y));
+  }
+  neighborDistances.sort((a, b) => a - b);
+  const typicalJump = neighborDistances.length
+    ? neighborDistances[Math.floor(neighborDistances.length / 2)]
+    : viewportJumpLimit;
+  const adaptiveJumpLimit = Math.min(viewportJumpLimit, Math.max(24, typicalJump * 8));
+  const requestedJumpLimit = Number(options.maxJump);
+  const maxJump = Number.isFinite(requestedJumpLimit) && requestedJumpLimit > 0
+    ? requestedJumpLimit
+    : adaptiveJumpLimit;
   const segments = [];
   let segment = [];
 
@@ -9,12 +30,8 @@ export function projectedPathData(points, width, height, options = {}) {
     segment = [];
   };
 
-  for (const point of points) {
-    const nearView = point
-      && Number.isFinite(point.x) && Number.isFinite(point.y)
-      && point.x >= -margin && point.x <= width + margin
-      && point.y >= -margin && point.y <= height + margin;
-    if (!nearView) {
+  for (const point of nearViewPoints) {
+    if (!point) {
       finishSegment();
       continue;
     }

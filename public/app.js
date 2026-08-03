@@ -639,7 +639,8 @@ function renderMarkers() {
     }
 
     const outlinePath = projectedPathData(footprint.polygon, footprintSvg.clientWidth, footprintSvg.clientHeight);
-    const nodeVisible = Boolean(outlinePath && footprint.matrix);
+    const outlineSegmentCount = (outlinePath.match(/M/g) || []).length;
+    const nodeVisible = Boolean(outlinePath && outlineSegmentCount === 1 && footprint.matrix);
     marker.node.hidden = !nodeVisible;
     if (outlinePath) {
       marker.outline.setAttribute("d", outlinePath);
