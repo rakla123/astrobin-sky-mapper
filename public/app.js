@@ -1,3 +1,5 @@
+import { projectedPathData, projectedQuadIsUsable } from "./geometry.mjs";
+
 const thumbLayer = document.querySelector("#thumb-layer");
 const footprintSvg = document.querySelector("#footprint-svg");
 const celestialReferenceSvg = document.querySelector("#celestial-reference-svg");
@@ -26,6 +28,7 @@ let images = [];
 let markers = [];
 let renderPending = false;
 let settleTimer = null;
+let viewRefreshTimers = [];
 let interactionSettled = true;
 let lastViewportSignature = "";
 let displayConfig = { orientationOffsetDeg: 90, footprintAnchor: "center", scaleSource: "pixel", overlayMode: "outline", survey: "P/DSS2/color" };
@@ -276,6 +279,29 @@ function footprintSkyPolygon(image, angularWidth, angularHeight) {
   return footprintEdgeOffsets(angularWidth, angularHeight).map(([uDeg, vDeg]) => footprintCornerRaDec(image, uDeg, vDeg));
 }
 
+function densifySkyPolygon(points, samplesPerEdge = 18) {
+  const vertices = points.length > 1
+    && points[0][0] === points.at(-1)[0]
+    && points[0][1] === points.at(-1)[1]
+    ? points.slice(0, -1)
+    : points;
+  const coordinates = [];
+  for (let edgeIndex = 0; edgeIndex < vertices.length; edgeIndex += 1) {
+    const from = vertices[edgeIndex];
+    const to = vertices[(edgeIndex + 1) % vertices.length];
+    const raDelta = ((Number(to[0]) - Number(from[0]) + 540) % 360) - 180;
+    for (let sampleIndex = 0; sampleIndex < samplesPerEdge; sampleIndex += 1) {
+      const fraction = sampleIndex / samplesPerEdge;
+      coordinates.push([
+        wrappedRa(Number(from[0]) + raDelta * fraction),
+        Number(from[1]) + (Number(to[1]) - Number(from[1])) * fraction
+      ]);
+    }
+  }
+  if (coordinates.length) coordinates.push(coordinates[0]);
+  return coordinates;
+}
+
 function footprintCornerOffsets(angularWidth, angularHeight) {
   if (displayConfig.footprintAnchor === "center") {
     const halfW = angularWidth / 2;
@@ -495,13 +521,16 @@ function adjustedScreenPolygon(points, image) {
 
 function projectedFootprint(image) {
   if (image.preciseFootprint?.polygon?.length >= 3) {
-    const polygon = adjustedScreenPolygon(image.preciseFootprint.polygon
+    const cornerPolygon = adjustedScreenPolygon(image.preciseFootprint.polygon
       .map(([ra, dec]) => screenPoint(ra, dec))
       .filter(Boolean), image);
-    if (polygon.length >= 4) {
-      const topLeft = polygon[0];
-      const topRight = polygon[1];
-      const bottomLeft = polygon[3];
+    const polygon = adjustedScreenPolygon(densifySkyPolygon(image.preciseFootprint.polygon)
+      .map(([ra, dec]) => screenPoint(ra, dec))
+      .filter(Boolean), image);
+    if (cornerPolygon.length >= 4 && polygon.length >= 4) {
+      const topLeft = cornerPolygon[0];
+      const topRight = cornerPolygon[1];
+      const bottomLeft = cornerPolygon[3];
       const widthPx = Number(image.footprint?.widthPx) || 100;
       const heightPx = Number(image.footprint?.heightPx) || 100;
       const baseWidth = 100;
@@ -511,7 +540,9 @@ function projectedFootprint(image) {
       const c = (bottomLeft.x - topLeft.x) / baseHeight;
       const d = (bottomLeft.y - topLeft.y) / baseHeight;
       return {
-        matrix: [a, b, c, d, topLeft.x, topLeft.y],
+        matrix: projectedQuadIsUsable(cornerPolygon, footprintSvg.clientWidth, footprintSvg.clientHeight)
+          ? [a, b, c, d, topLeft.x, topLeft.y]
+          : null,
         baseWidth,
         baseHeight,
         points: polygon,
@@ -589,6 +620,23 @@ function scheduleRender() {
   });
 }
 
+function refreshViewAfterNavigation() {
+  viewRefreshTimers.forEach(clearTimeout);
+  viewRefreshTimers = [];
+  lastViewportSignature = "";
+  scheduleInteractiveRender();
+  requestAnimationFrame(() => {
+    lastViewportSignature = "";
+    scheduleRender();
+  });
+  [80, 240, 500].forEach((delay) => {
+    viewRefreshTimers.push(setTimeout(() => {
+      lastViewportSignature = "";
+      scheduleRender();
+    }, delay));
+  });
+}
+
 function viewportSignature() {
   if (!aladin) return "";
   const fov = aladin.getFov?.() || [];
@@ -596,11 +644,13 @@ function viewportSignature() {
   const centerRa = Array.isArray(center) ? center[0] : center.ra ?? center.RA;
   const centerDec = Array.isArray(center) ? center[1] : center.dec ?? center.DE;
   const rotation = Number(aladin.getRotation?.() || 0);
+  const projection = String(aladin.getProjectionName?.() || "");
   return [
     Number(fov[0] || 0).toFixed(4),
     Number(centerRa || 0).toFixed(4),
     Number(centerDec || 0).toFixed(4),
     rotation.toFixed(3),
+    projection,
     thumbLayer.clientWidth,
     thumbLayer.clientHeight
   ].join("|");
@@ -748,7 +798,7 @@ function renderMarkers() {
 
   for (const marker of markers) {
     marker.outline.hidden = true;
-    marker.outline.removeAttribute("points");
+    marker.outline.removeAttribute("d");
   }
 
   for (const marker of markers) {
@@ -768,25 +818,31 @@ function renderMarkers() {
     const xs = footprint.points.map((point) => point.x);
     const ys = footprint.points.map((point) => point.y);
     const visible = Math.max(...xs) > -100 && Math.min(...xs) < rect.width + 100 && Math.max(...ys) > -100 && Math.min(...ys) < rect.height + 100;
-    marker.node.hidden = !visible;
-    if (visible) {
-      const [a, b, c, d, e, f] = footprint.matrix;
-      marker.outline.setAttribute("points", footprint.polygon.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" "));
+    const outlinePath = visible
+      ? projectedPathData(footprint.polygon, footprintSvg.clientWidth, footprintSvg.clientHeight)
+      : "";
+    const nodeVisible = Boolean(outlinePath && footprint.matrix);
+    marker.node.hidden = !nodeVisible;
+    if (outlinePath) {
+      marker.outline.setAttribute("d", outlinePath);
       marker.outline.hidden = false;
       marker.outline.classList.toggle("is-active", activeImage && imageKey(activeImage) === imageKey(marker.image));
-      marker.node.style.left = "0";
-      marker.node.style.top = "0";
-      marker.node.style.width = `${footprint.baseWidth}px`;
-      marker.node.style.height = `${footprint.baseHeight}px`;
-      marker.node.style.transform = `matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`;
-      const isActive = activeImage && imageKey(activeImage) === imageKey(marker.image);
-      const showImageFill = imageMode && marker.image.overlayUrl && (isActive || (allowImageFill && imageFillCount < MAX_IMAGE_FILLS));
-      if (showImageFill) imageFillCount += 1;
-      marker.node.style.backgroundImage = showImageFill ? `url("${marker.image.overlayUrl}")` : "none";
-      marker.node.classList.toggle("is-image-fill", Boolean(showImageFill));
-      marker.node.classList.toggle("is-outline-only", !imageMode);
-      marker.node.classList.toggle("is-image-waiting", imageMode && !showImageFill);
-      marker.node.classList.toggle("is-minified", !footprint.exact);
+      if (nodeVisible) {
+        const [a, b, c, d, e, f] = footprint.matrix;
+        marker.node.style.left = "0";
+        marker.node.style.top = "0";
+        marker.node.style.width = `${footprint.baseWidth}px`;
+        marker.node.style.height = `${footprint.baseHeight}px`;
+        marker.node.style.transform = `matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`;
+        const isActive = activeImage && imageKey(activeImage) === imageKey(marker.image);
+        const showImageFill = imageMode && marker.image.overlayUrl && (isActive || (allowImageFill && imageFillCount < MAX_IMAGE_FILLS));
+        if (showImageFill) imageFillCount += 1;
+        marker.node.style.backgroundImage = showImageFill ? `url("${marker.image.overlayUrl}")` : "none";
+        marker.node.classList.toggle("is-image-fill", Boolean(showImageFill));
+        marker.node.classList.toggle("is-outline-only", !imageMode);
+        marker.node.classList.toggle("is-image-waiting", imageMode && !showImageFill);
+        marker.node.classList.toggle("is-minified", !footprint.exact);
+      }
     } else {
       marker.outline.hidden = true;
     }
@@ -800,7 +856,7 @@ function createMarkers(resolvedImages) {
   thumbLayer.replaceChildren();
   footprintSvg.replaceChildren();
   markers = resolvedImages.map((image) => {
-    const outline = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    const outline = document.createElementNS("http://www.w3.org/2000/svg", "path");
     outline.classList.add("footprint-outline");
     outline.addEventListener("mouseenter", () => showPreview(image));
     outline.addEventListener("click", () => {
@@ -972,7 +1028,7 @@ async function boot() {
     showZoomControl: true
   });
 
-  ["positionChanged", "zoomChanged", "rotationChanged"].forEach((eventName) => {
+  ["positionChanged", "zoomChanged", "rotationChanged", "projectionChanged"].forEach((eventName) => {
     try {
       aladin.on(eventName, scheduleInteractiveRender);
     } catch {
@@ -1002,6 +1058,7 @@ async function boot() {
     aladin.gotoRaDec(180, 0);
     aladin.setRotation(0);
     aladin.setFoV(OVERVIEW_FOV_DEG);
+    refreshViewAfterNavigation();
   });
   previousPageButton.addEventListener("click", () => {
     currentPage -= 1;
