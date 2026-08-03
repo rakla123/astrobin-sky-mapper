@@ -10,7 +10,6 @@
     <main class="app-shell">
       <section class="sky-stage" aria-label="AstroBin sky projection">
         <div id="aladin"></div>
-        <svg id="celestial-reference-svg" class="celestial-reference-svg" aria-hidden="true"></svg>
         <svg id="footprint-svg" class="footprint-svg" aria-hidden="true"></svg>
         <div id="thumb-layer" class="thumb-layer"></div>
         <div class="topbar">
@@ -46,19 +45,6 @@
         </aside>
         <button id="home-button" class="home-button" type="button" title="Back to whole-sky overview" aria-label="Back to whole-sky overview">⌂</button>
         <div class="calibration-panel" aria-label="Footprint calibration">
-          <label class="survey-select" title="Choose the sky background survey. Pan-STARRS is rich optical color, while 2MASS and WISE show infrared structure.">
-            <span>Sky</span>
-            <select id="survey-select" aria-label="Sky background survey">
-              <option value="P/DSS2/color">DSS2</option>
-              <option value="P/PanSTARRS/DR1/color-z-zg-g">Pan-STARRS</option>
-              <option value="P/2MASS/color">2MASS</option>
-              <option value="P/AllWISE/color">WISE</option>
-            </select>
-          </label>
-          <div class="segmented" id="anchor-controls">
-            <button type="button" data-anchor="center" title="Place each footprint around the AstroBin RA/Dec center." aria-label="Center anchor: place each footprint around the AstroBin RA and Dec center.">Center</button>
-            <button type="button" data-anchor="top-left" title="Treat the AstroBin RA/Dec coordinate as the top-left image corner. Usually only useful for testing old assumptions." aria-label="Top left anchor: treat the AstroBin RA and Dec coordinate as the top-left image corner.">Top left</button>
-          </div>
           <div class="segmented" id="scale-controls">
             <button type="button" data-scale-source="pixel" title="Size footprints from image pixels multiplied by AstroBin pixel scale. Best when pixel scale metadata is reliable." aria-label="Pixel scale: size footprints from image pixels multiplied by AstroBin pixel scale.">Pixel</button>
             <button type="button" data-scale-source="field" title="Size footprints from AstroBin field radius and image aspect ratio. Useful when pixel scale is missing or inconsistent." aria-label="Field scale: size footprints from AstroBin field radius and image aspect ratio.">Field</button>

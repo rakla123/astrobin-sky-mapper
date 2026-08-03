@@ -2,18 +2,15 @@ import { projectedPathData, projectedQuadIsUsable } from "./geometry.mjs";
 
 const thumbLayer = document.querySelector("#thumb-layer");
 const footprintSvg = document.querySelector("#footprint-svg");
-const celestialReferenceSvg = document.querySelector("#celestial-reference-svg");
 const preview = document.querySelector("#preview");
 const imageCount = document.querySelector("#image-count");
 const libraryPill = document.querySelector("#library-pill");
 const observerPill = document.querySelector("#observer-pill");
 const accountTitle = document.querySelector("#account-title");
 const homeButton = document.querySelector("#home-button");
-const anchorControls = document.querySelector("#anchor-controls");
 const rotationControls = document.querySelector("#rotation-controls");
 const scaleControls = document.querySelector("#scale-controls");
 const overlayControls = document.querySelector("#overlay-controls");
-const surveySelect = document.querySelector("#survey-select");
 const unresolvedPanel = document.querySelector("#unresolved-panel");
 const unresolvedList = document.querySelector("#unresolved-list");
 const unresolvedToggle = document.querySelector("#unresolved-toggle");
@@ -31,9 +28,10 @@ let settleTimer = null;
 let viewRefreshTimers = [];
 let interactionSettled = true;
 let lastViewportSignature = "";
-let displayConfig = { orientationOffsetDeg: 90, footprintAnchor: "center", scaleSource: "pixel", overlayMode: "outline", survey: "P/DSS2/color" };
+let displayConfig = { orientationOffsetDeg: 90, scaleSource: "pixel", overlayMode: "outline", survey: "P/DSS2/color" };
 let activeImage = null;
 let imageAdjustments = {};
+let footprintGeometryCache = new WeakMap();
 let currentPage = 0;
 let pageSize = 30;
 const A = window.A;
@@ -90,6 +88,7 @@ function setImageRotationDelta(image, deltaDeg) {
   const key = imageKey(image);
   const current = getImageAdjustment(image);
   imageAdjustments[key] = { ...current, rotationDeg: Number(current.rotationDeg || 0) + deltaDeg };
+  footprintGeometryCache.delete(image);
   saveImageAdjustments();
   showPreview(image);
   scheduleRender();
@@ -100,6 +99,7 @@ function setImageScaleDelta(image, deltaFactor) {
   const current = getImageAdjustment(image);
   const nextScale = clamp(Number(current.scaleFactor || 1) * deltaFactor, 0.25, 4);
   imageAdjustments[key] = { ...current, scaleFactor: nextScale };
+  footprintGeometryCache.delete(image);
   saveImageAdjustments();
   showPreview(image);
   scheduleRender();
@@ -107,6 +107,7 @@ function setImageScaleDelta(image, deltaFactor) {
 
 function resetImageAdjustment(image) {
   delete imageAdjustments[imageKey(image)];
+  footprintGeometryCache.delete(image);
   saveImageAdjustments();
   showPreview(image);
   scheduleRender();
@@ -303,23 +304,18 @@ function densifySkyPolygon(points, samplesPerEdge = 18) {
 }
 
 function footprintCornerOffsets(angularWidth, angularHeight) {
-  if (displayConfig.footprintAnchor === "center") {
-    const halfW = angularWidth / 2;
-    const halfH = angularHeight / 2;
-    return {
-      topLeft: [-halfW, halfH],
-      topRight: [halfW, halfH],
-      bottomRight: [halfW, -halfH],
-      bottomLeft: [-halfW, -halfH]
-    };
-  }
-
+  const halfW = angularWidth / 2;
+  const halfH = angularHeight / 2;
   return {
-    topLeft: [0, 0],
-    topRight: [angularWidth, 0],
-    bottomRight: [angularWidth, -angularHeight],
-    bottomLeft: [0, -angularHeight]
+    topLeft: [-halfW, halfH],
+    topRight: [halfW, halfH],
+    bottomRight: [halfW, -halfH],
+    bottomLeft: [-halfW, -halfH]
   };
+}
+
+function wrappedRa(ra) {
+  return ((ra % 360) + 360) % 360;
 }
 
 function screenPoint(ra, dec) {
@@ -328,167 +324,6 @@ function screenPoint(ra, dec) {
   const xy = aladin.world2pix(ra, dec);
   if (!xy || !Number.isFinite(xy[0]) || !Number.isFinite(xy[1])) return null;
   return { x: xy[0], y: xy[1] };
-}
-
-function svgElement(name, attributes = {}) {
-  const element = document.createElementNS("http://www.w3.org/2000/svg", name);
-  Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
-  return element;
-}
-
-function sampledSkyPath(coordinates) {
-  const width = celestialReferenceSvg.clientWidth;
-  const height = celestialReferenceSvg.clientHeight;
-  const maxJump = Math.max(width, height) * 0.38;
-  const margin = 80;
-  const segments = [];
-  let segment = [];
-
-  const finishSegment = () => {
-    if (segment.length >= 2) segments.push(segment);
-    segment = [];
-  };
-
-  for (const [ra, dec] of coordinates) {
-    const point = screenPoint(ra, dec);
-    const nearView = point
-      && point.x >= -margin && point.x <= width + margin
-      && point.y >= -margin && point.y <= height + margin;
-    if (!nearView) {
-      finishSegment();
-      continue;
-    }
-    const previous = segment.at(-1);
-    if (previous && Math.hypot(point.x - previous.x, point.y - previous.y) > maxJump) finishSegment();
-    segment.push(point);
-  }
-  finishSegment();
-
-  return segments.map((points) => points
-    .map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`)
-    .join(" ")).join(" ");
-}
-
-function sampledRange(start, end, sampleCount, coordinateFactory) {
-  const safeCount = Math.max(2, Math.floor(sampleCount));
-  return Array.from({ length: safeCount }, (_, index) => {
-    const fraction = index / (safeCount - 1);
-    return coordinateFactory(start + (end - start) * fraction);
-  });
-}
-
-function wrappedRa(ra) {
-  return ((ra % 360) + 360) % 360;
-}
-
-function viewCenterRaDec() {
-  const reported = aladin.getRaDec?.() || aladin.getCenter?.();
-  const reportedRa = Number(Array.isArray(reported) ? reported[0] : reported?.ra ?? reported?.RA);
-  const reportedDec = Number(Array.isArray(reported) ? reported[1] : reported?.dec ?? reported?.DE);
-  if (Number.isFinite(reportedRa) && Number.isFinite(reportedDec)) return [reportedRa, reportedDec];
-
-  const fromPixels = aladin.pix2world?.(
-    celestialReferenceSvg.clientWidth / 2,
-    celestialReferenceSvg.clientHeight / 2,
-    "icrs"
-  );
-  const pixelRa = Number(fromPixels?.[0]);
-  const pixelDec = Number(fromPixels?.[1]);
-  return Number.isFinite(pixelRa) && Number.isFinite(pixelDec) ? [pixelRa, pixelDec] : [0, 0];
-}
-
-function addReferenceLabel(text, pathData) {
-  const matches = [...pathData.matchAll(/[ML](-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)];
-  const targetX = celestialReferenceSvg.clientWidth / 2;
-  const targetY = celestialReferenceSvg.clientHeight * 0.62;
-  const match = matches.length ? matches.reduce((closest, candidate) => {
-    const distance = Math.hypot(Number(candidate[1]) - targetX, Number(candidate[2]) - targetY);
-    const closestDistance = Math.hypot(Number(closest[1]) - targetX, Number(closest[2]) - targetY);
-    return distance < closestDistance ? candidate : closest;
-  }) : null;
-  if (!match) return;
-  const label = svgElement("text", {
-    x: clamp(Number(match[1]) + 7, 20, celestialReferenceSvg.clientWidth - 150),
-    y: clamp(Number(match[2]) - 7, 80, celestialReferenceSvg.clientHeight - 120),
-    class: "celestial-reference-label"
-  });
-  label.textContent = text;
-  celestialReferenceSvg.appendChild(label);
-}
-
-function renderNorthIndicator() {
-  const [centerRa, centerDec] = viewCenterRaDec();
-  const fov = Number(aladin.getFov?.()[0] || 60);
-  const northPosition = directionalOffsetRaDec(centerRa, centerDec, 0, clamp(fov / 8, 0.2, 5));
-  const centerPoint = screenPoint(centerRa, centerDec);
-  const northPoint = screenPoint(northPosition[0], northPosition[1]);
-  let direction = { x: 0, y: -1 };
-  if (centerPoint && northPoint) {
-    const dx = northPoint.x - centerPoint.x;
-    const dy = northPoint.y - centerPoint.y;
-    const length = Math.hypot(dx, dy);
-    if (length > 0.01) direction = { x: dx / length, y: dy / length };
-  }
-
-  const x = 48;
-  const y = Math.max(150, celestialReferenceSvg.clientHeight * 0.36);
-  const tipX = x + direction.x * 26;
-  const tipY = y + direction.y * 26;
-  celestialReferenceSvg.appendChild(svgElement("line", {
-    x1: x, y1: y, x2: tipX, y2: tipY, class: "north-arrow"
-  }));
-
-  const angle = Math.atan2(direction.y, direction.x);
-  const wing = 6;
-  const wingAngle = 0.6;
-  celestialReferenceSvg.appendChild(svgElement("path", {
-    d: `M${tipX.toFixed(1)},${tipY.toFixed(1)} L${(tipX - Math.cos(angle - wingAngle) * wing).toFixed(1)},${(tipY - Math.sin(angle - wingAngle) * wing).toFixed(1)} M${tipX.toFixed(1)},${tipY.toFixed(1)} L${(tipX - Math.cos(angle + wingAngle) * wing).toFixed(1)},${(tipY - Math.sin(angle + wingAngle) * wing).toFixed(1)}`,
-    class: "north-arrow"
-  }));
-
-  const label = svgElement("text", {
-    x: tipX + direction.x * 10,
-    y: tipY + direction.y * 10 + 4,
-    class: "north-indicator",
-    "text-anchor": "middle"
-  });
-  label.textContent = "N";
-  celestialReferenceSvg.appendChild(label);
-}
-
-function renderCelestialReferences() {
-  if (!aladin || !celestialReferenceSvg) return;
-  celestialReferenceSvg.replaceChildren();
-
-  const [centerRa, centerDec] = viewCenterRaDec();
-  const fov = clamp(Number(aladin.getFov?.()[0] || 60), 0.001, 360);
-  const equatorSpan = Math.min(360, Math.max(0.5, fov * 2.4));
-  const meridianSpan = Math.min(178, Math.max(0.5, fov * 2.4));
-  const sampleCount = fov >= 240 ? 721 : 361;
-  const equatorCoordinates = sampledRange(
-    centerRa - equatorSpan / 2,
-    centerRa + equatorSpan / 2,
-    sampleCount,
-    (ra) => [wrappedRa(ra), 0]
-  );
-  const meridianCoordinates = sampledRange(
-    Math.max(-89, centerDec - meridianSpan / 2),
-    Math.min(89, centerDec + meridianSpan / 2),
-    sampleCount,
-    (dec) => [wrappedRa(centerRa), dec]
-  );
-  const equatorPath = sampledSkyPath(equatorCoordinates);
-  const meridianPath = sampledSkyPath(meridianCoordinates);
-
-  if (equatorPath) {
-    celestialReferenceSvg.appendChild(svgElement("path", { d: equatorPath, class: "celestial-equator" }));
-    addReferenceLabel("Celestial equator", equatorPath);
-  }
-  if (meridianPath) {
-    celestialReferenceSvg.appendChild(svgElement("path", { d: meridianPath, class: "central-meridian" }));
-    addReferenceLabel("Central RA meridian", meridianPath);
-  }
-  renderNorthIndicator();
 }
 
 function adjustedScreenPolygon(points, image) {
@@ -519,95 +354,95 @@ function adjustedScreenPolygon(points, image) {
   });
 }
 
-function projectedFootprint(image) {
+function cachedFootprintGeometry(image) {
+  const cached = footprintGeometryCache.get(image);
+  if (cached) return cached;
+
+  let geometry;
   if (image.preciseFootprint?.polygon?.length >= 3) {
-    const cornerPolygon = adjustedScreenPolygon(image.preciseFootprint.polygon
-      .map(([ra, dec]) => screenPoint(ra, dec))
-      .filter(Boolean), image);
-    const polygon = adjustedScreenPolygon(densifySkyPolygon(image.preciseFootprint.polygon)
-      .map(([ra, dec]) => screenPoint(ra, dec))
-      .filter(Boolean), image);
-    if (cornerPolygon.length >= 4 && polygon.length >= 4) {
-      const topLeft = cornerPolygon[0];
-      const topRight = cornerPolygon[1];
-      const bottomLeft = cornerPolygon[3];
-      const widthPx = Number(image.footprint?.widthPx) || 100;
-      const heightPx = Number(image.footprint?.heightPx) || 100;
-      const baseWidth = 100;
-      const baseHeight = clamp(100 * (heightPx / widthPx), 8, 600);
-      const a = (topRight.x - topLeft.x) / baseWidth;
-      const b = (topRight.y - topLeft.y) / baseWidth;
-      const c = (bottomLeft.x - topLeft.x) / baseHeight;
-      const d = (bottomLeft.y - topLeft.y) / baseHeight;
-      return {
-        matrix: projectedQuadIsUsable(cornerPolygon, footprintSvg.clientWidth, footprintSvg.clientHeight)
-          ? [a, b, c, d, topLeft.x, topLeft.y]
-          : null,
-        baseWidth,
-        baseHeight,
-        points: polygon,
-        polygon,
-        exact: true
+    geometry = {
+      kind: "precise",
+      corners: image.preciseFootprint.polygon,
+      polygon: densifySkyPolygon(image.preciseFootprint.polygon)
+    };
+  } else {
+    const size = angularFootprintSize(image);
+    const width = Number(size?.width);
+    const height = Number(size?.height);
+    if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+      const offsets = footprintCornerOffsets(width, height);
+      geometry = {
+        kind: "metadata",
+        width,
+        height,
+        corners: [offsets.topLeft, offsets.topRight, offsets.bottomRight, offsets.bottomLeft]
+          .map(([uDeg, vDeg]) => footprintCornerRaDec(image, uDeg, vDeg)),
+        polygon: footprintSkyPolygon(image, width, height)
       };
+    } else {
+      geometry = { kind: "point" };
     }
   }
 
-  const angularSize = angularFootprintSize(image);
-  const angularWidth = Number(angularSize?.width);
-  const angularHeight = Number(angularSize?.height);
-  if (!Number.isFinite(angularWidth) || !Number.isFinite(angularHeight) || angularWidth <= 0 || angularHeight <= 0) {
+  footprintGeometryCache.set(image, geometry);
+  return geometry;
+}
+
+function footprintMayBeVisible(image, fov, rect) {
+  if (fov >= 120) return true;
+  const center = screenPoint(image.ra, image.dec);
+  if (!center) return true;
+  const size = angularFootprintSize(image);
+  const radiusDeg = size ? Math.hypot(size.width, size.height) / 2 : 0;
+  const padding = 120 + Math.min(Math.max(rect.width, rect.height), radiusDeg * rect.width / Math.max(fov, 0.01) * 2);
+  return center.x >= -padding && center.x <= rect.width + padding
+    && center.y >= -padding && center.y <= rect.height + padding;
+}
+
+function projectedFootprint(image) {
+  const geometry = cachedFootprintGeometry(image);
+  if (geometry.kind === "point") {
     const center = screenPoint(image.ra, image.dec);
     if (!center) return null;
-    return {
-      matrix: [58, 0, 0, 58, center.x - 29, center.y - 29],
-      baseWidth: 1,
-      baseHeight: 1,
-      points: [
-        { x: center.x - 29, y: center.y - 29 },
-        { x: center.x + 29, y: center.y - 29 },
-        { x: center.x + 29, y: center.y + 29 },
-        { x: center.x - 29, y: center.y + 29 }
-      ],
-      polygon: [
-        { x: center.x - 29, y: center.y - 29 },
-        { x: center.x + 29, y: center.y - 29 },
-        { x: center.x + 29, y: center.y + 29 },
-        { x: center.x - 29, y: center.y + 29 }
-      ],
-      exact: false
-    };
+    const polygon = [
+      { x: center.x - 29, y: center.y - 29 },
+      { x: center.x + 29, y: center.y - 29 },
+      { x: center.x + 29, y: center.y + 29 },
+      { x: center.x - 29, y: center.y + 29 }
+    ];
+    polygon.push(polygon[0]);
+    return { matrix: [58, 0, 0, 58, center.x - 29, center.y - 29], baseWidth: 1, baseHeight: 1, points: polygon, polygon, exact: false };
   }
 
-  const offsets = footprintCornerOffsets(angularWidth, angularHeight);
-  const polygon = footprintSkyPolygon(image, angularWidth, angularHeight)
-    .map(([ra, dec]) => screenPoint(ra, dec))
-    .filter(Boolean);
-  const topLeftRaDec = footprintCornerRaDec(image, ...offsets.topLeft);
-  const topRightRaDec = footprintCornerRaDec(image, ...offsets.topRight);
-  const bottomRightRaDec = footprintCornerRaDec(image, ...offsets.bottomRight);
-  const bottomLeftRaDec = footprintCornerRaDec(image, ...offsets.bottomLeft);
-  const topLeft = screenPoint(topLeftRaDec[0], topLeftRaDec[1]);
-  const topRight = screenPoint(topRightRaDec[0], topRightRaDec[1]);
-  const bottomRight = screenPoint(bottomRightRaDec[0], bottomRightRaDec[1]);
-  const bottomLeft = screenPoint(bottomLeftRaDec[0], bottomLeftRaDec[1]);
+  const cornerPolygon = geometry.corners.map(([ra, dec]) => screenPoint(ra, dec)).filter(Boolean);
+  const polygon = geometry.polygon.map(([ra, dec]) => screenPoint(ra, dec)).filter(Boolean);
+  if (cornerPolygon.length < 4 || polygon.length < 4) return null;
 
-  if (!topLeft || !topRight || !bottomRight || !bottomLeft) return null;
-
+  const screenCorners = geometry.kind === "precise" ? adjustedScreenPolygon(cornerPolygon, image) : cornerPolygon;
+  const screenPolygon = geometry.kind === "precise" ? adjustedScreenPolygon(polygon, image) : polygon;
+  const [topLeft, topRight, , bottomLeft] = screenCorners;
   const baseWidth = 100;
-  const baseHeight = clamp(100 * (angularHeight / angularWidth), 8, 600);
-  const a = (topRight.x - topLeft.x) / baseWidth;
-  const b = (topRight.y - topLeft.y) / baseWidth;
-  const c = (bottomLeft.x - topLeft.x) / baseHeight;
-  const d = (bottomLeft.y - topLeft.y) / baseHeight;
+  const heightRatio = geometry.kind === "precise"
+    ? (Number(image.footprint?.heightPx) || 100) / (Number(image.footprint?.widthPx) || 100)
+    : geometry.height / geometry.width;
+  const baseHeight = clamp(100 * heightRatio, 8, 600);
+  const matrix = [
+    (topRight.x - topLeft.x) / baseWidth,
+    (topRight.y - topLeft.y) / baseWidth,
+    (bottomLeft.x - topLeft.x) / baseHeight,
+    (bottomLeft.y - topLeft.y) / baseHeight,
+    topLeft.x,
+    topLeft.y
+  ];
   const width = Math.hypot(topRight.x - topLeft.x, topRight.y - topLeft.y);
   const height = Math.hypot(bottomLeft.x - topLeft.x, bottomLeft.y - topLeft.y);
   return {
-    matrix: [a, b, c, d, topLeft.x, topLeft.y],
+    matrix: projectedQuadIsUsable(screenCorners, footprintSvg.clientWidth, footprintSvg.clientHeight) ? matrix : null,
     baseWidth,
     baseHeight,
-    points: [topLeft, topRight, bottomRight, bottomLeft],
-    polygon: polygon.length >= 4 ? polygon : [topLeft, topRight, bottomRight, bottomLeft],
-    exact: width >= 8 && height >= 8
+    points: screenPolygon,
+    polygon: screenPolygon,
+    exact: geometry.kind === "precise" || (width >= 8 && height >= 8)
   };
 }
 
@@ -685,12 +520,10 @@ function loadDisplayConfig(defaultConfig) {
   } catch {
     /* Ignore invalid local calibration state. */
   }
+  delete displayConfig.footprintAnchor;
 }
 
 function updateCalibrationButtons() {
-  anchorControls?.querySelectorAll("button").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.anchor === displayConfig.footprintAnchor);
-  });
   rotationControls?.querySelectorAll("button").forEach((button) => {
     button.classList.toggle("is-active", Number(button.dataset.rotation) === Number(displayConfig.orientationOffsetDeg));
   });
@@ -700,9 +533,6 @@ function updateCalibrationButtons() {
   overlayControls?.querySelectorAll("button").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.overlayMode === displayConfig.overlayMode);
   });
-  if (surveySelect) {
-    surveySelect.value = displayConfig.survey || "P/DSS2/color";
-  }
 }
 
 function applySurvey(surveyId) {
@@ -719,26 +549,11 @@ function applySurvey(surveyId) {
 }
 
 function wireCalibrationControls() {
-  surveySelect?.addEventListener("change", () => {
-    displayConfig.survey = surveySelect.value;
-    saveDisplayConfig();
-    applySurvey(displayConfig.survey);
-    scheduleRender();
-  });
-
-  anchorControls?.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-anchor]");
-    if (!button) return;
-    displayConfig.footprintAnchor = button.dataset.anchor;
-    saveDisplayConfig();
-    updateCalibrationButtons();
-    scheduleRender();
-  });
-
   rotationControls?.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-rotation]");
     if (!button) return;
     displayConfig.orientationOffsetDeg = Number(button.dataset.rotation);
+    footprintGeometryCache = new WeakMap();
     saveDisplayConfig();
     updateCalibrationButtons();
     scheduleRender();
@@ -748,6 +563,7 @@ function wireCalibrationControls() {
     const button = event.target.closest("button[data-scale-source]");
     if (!button) return;
     displayConfig.scaleSource = button.dataset.scaleSource;
+    footprintGeometryCache = new WeakMap();
     saveDisplayConfig();
     updateCalibrationButtons();
     if (activeImage) showPreview(activeImage);
@@ -788,7 +604,6 @@ function wireImageCalibrationControls() {
 
 function renderMarkers() {
   if (!aladin) return;
-  renderCelestialReferences();
   lastViewportSignature = viewportSignature();
   const rect = thumbLayer.getBoundingClientRect();
   const fov = Number(aladin.getFov?.()[0] || 90);
@@ -797,11 +612,11 @@ function renderMarkers() {
   let imageFillCount = 0;
 
   for (const marker of markers) {
+    marker.node.hidden = true;
     marker.outline.hidden = true;
     marker.outline.removeAttribute("d");
-  }
+    if (!footprintMayBeVisible(marker.image, fov, rect)) continue;
 
-  for (const marker of markers) {
     let footprint = null;
     try {
       footprint = projectedFootprint(marker.image);
@@ -815,12 +630,7 @@ function renderMarkers() {
       continue;
     }
 
-    const xs = footprint.points.map((point) => point.x);
-    const ys = footprint.points.map((point) => point.y);
-    const visible = Math.max(...xs) > -100 && Math.min(...xs) < rect.width + 100 && Math.max(...ys) > -100 && Math.min(...ys) < rect.height + 100;
-    const outlinePath = visible
-      ? projectedPathData(footprint.polygon, footprintSvg.clientWidth, footprintSvg.clientHeight)
-      : "";
+    const outlinePath = projectedPathData(footprint.polygon, footprintSvg.clientWidth, footprintSvg.clientHeight);
     const nodeVisible = Boolean(outlinePath && footprint.matrix);
     marker.node.hidden = !nodeVisible;
     if (outlinePath) {
@@ -872,16 +682,6 @@ function createMarkers(resolvedImages) {
     node.title = image.title;
     image.overlayUrl = image.localSolveImageUrl || image.preview || image.thumb || "";
     node.style.backgroundImage = "none";
-    if (image.overlayUrl) {
-      const probe = new Image();
-      probe.onload = () => {
-        if (probe.naturalWidth && probe.naturalHeight) {
-          image.naturalAspect = probe.naturalWidth / probe.naturalHeight;
-          scheduleRender();
-        }
-      };
-      probe.src = image.overlayUrl;
-    }
     node.addEventListener("mouseenter", () => showPreview(image));
     node.addEventListener("focus", () => showPreview(image));
     node.addEventListener("click", () => {
@@ -1023,6 +823,8 @@ async function boot() {
     showReticle: false,
     showSimbadPointerControl: true,
     showCooGridControl: true,
+    showLayersControl: true,
+    showProjectionControl: true,
     showSettingsControl: true,
     showFullscreenControl: true,
     showZoomControl: true
@@ -1080,8 +882,9 @@ async function boot() {
   wireImageCalibrationControls();
 
   window.addEventListener("resize", scheduleRender);
-  setInterval(scheduleRenderIfViewportChanged, 250);
-  setInterval(scheduleRender, 60000);
+  setInterval(() => {
+    if (!document.hidden) scheduleRenderIfViewportChanged();
+  }, 500);
   await loadImages();
 }
 
