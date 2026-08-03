@@ -121,7 +121,7 @@ test("uses native Aladin sky, grid, and projection controls", async () => {
 
 test("splits footprint outlines at projection discontinuities", async () => {
   const geometryUrl = pathToFileURL(path.join(__dirname, "..", "public", "geometry.mjs")).href;
-  const { projectedPathData, projectedQuadIsUsable } = await import(geometryUrl);
+  const { projectedPathData, projectedQuadIsUsable, skyRoundTripIsValid } = await import(geometryUrl);
   const seamCrossing = [
     { x: 985, y: 240 },
     { x: 995, y: 245 },
@@ -136,16 +136,30 @@ test("splits footprint outlines at projection discontinuities", async () => {
     { x: 100, y: 180 },
     { x: 100, y: 100 }
   ];
+  const projectionBoundary = [
+    { x: 100, y: 100 },
+    { x: 120, y: 110 },
+    null,
+    { x: 180, y: 140 },
+    { x: 200, y: 150 }
+  ];
 
   assert.equal((projectedPathData(seamCrossing, 1000, 500).match(/M/g) || []).length, 2);
   assert.equal(projectedQuadIsUsable(seamCrossing, 1000, 500), false);
   assert.equal((projectedPathData(regularQuad, 1000, 500).match(/M/g) || []).length, 1);
   assert.equal(projectedQuadIsUsable(regularQuad, 1000, 500), true);
+  assert.equal((projectedPathData(projectionBoundary, 1000, 500).match(/M/g) || []).length, 2);
+  assert.equal(skyRoundTripIsValid(359.9, 20, [0.1, 20]), true);
+  assert.equal(skyRoundTripIsValid(10, 20, [Number.NaN, 20]), false);
+  assert.equal(skyRoundTripIsValid(10, 20, [40, 20]), false);
+  assert.equal(projectedQuadIsUsable([regularQuad[0], null, regularQuad[2], regularQuad[3]], 1000, 500), false);
 
   const script = await fetch(`${baseUrl}/app.js`).then((response) => response.text());
   assert.match(script, /createElementNS\("http:\/\/www\.w3\.org\/2000\/svg", "path"\)/);
   assert.match(script, /marker\.outline\.setAttribute\("d", outlinePath\)/);
   assert.match(script, /projectedQuadIsUsable/);
+  assert.match(script, /skyRoundTripIsValid/);
+  assert.match(script, /aladin\.pix2world/);
   assert.doesNotMatch(script, /marker\.outline\.setAttribute\("points"/);
 });
 
@@ -198,7 +212,7 @@ test("does not expose private filesystem paths in client configuration", async (
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.2.0-beta.1");
+  assert.equal(payload.version, "1.2.0-beta.2");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
