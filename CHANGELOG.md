@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.9 - 2026-08-02
+
+- Move the desktop calibration and overview controls above Aladin's lower-left zoom and field-of-view controls.
+- Reposition the API notice and unresolved-image panel to keep the bottom overlays from colliding.
+
 ## 1.1.8 - 2026-08-02
 
 - Remove the raw AstroBin astrometry-field inventory from the object information panel.
