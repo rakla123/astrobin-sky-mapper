@@ -10,7 +10,7 @@ This document describes known constraints in AstroBin Sky Mapper. They are not n
 4. **Library and collection filtering is inconsistent.** The legacy API does not expose every website library/collection relationship uniformly. The mapper tries supported query variants and uses local metadata matching only when matching metadata is actually returned.
 5. **Search and pagination limits apply.** AstroBin documents a 100-result limit for subject searches. The mapper uses user-image queries and follows a configurable number of pages, but it cannot guarantee retrieval beyond AstroBin's server-side limits or future API changes.
 6. **No formal uptime or schema guarantee is assumed.** Endpoint behavior, fields, authentication, limits, and terms may change. The mapper may require an update when AstroBin changes the service.
-7. **Fair-use rules apply.** Results are cached to reduce traffic, and the interface shows no more than 30 AstroBin entries per page. Users remain responsible for API-key usage and compliance with AstroBin's current terms.
+7. **Fair-use rules apply.** Results are cached to reduce traffic, and the default display page contains 30 entries. Choosing a larger display page uses already retrieved data and does not generate additional AstroBin API requests. Users remain responsible for API-key usage and compliance with AstroBin's current terms.
 
 ## Image previews and rights
 
@@ -45,3 +45,9 @@ This document describes known constraints in AstroBin Sky Mapper. They are not n
 4. A current browser with JavaScript, WebGL, local storage, and network access is required.
 5. Per-image manual calibration is stored only in the current browser profile. It is not synchronized or included in the WCS cache.
 6. The server is designed for a single local user. It has no accounts, multi-user isolation, TLS, or public-hosting hardening.
+
+## Beta interface changes
+
+1. Version 1.2.0-beta.1 relies on Aladin Lite's native layer, coordinate-grid, and projection controls. Their placement and behavior are controlled by the bundled Aladin version rather than by AstroBin Sky Mapper.
+2. The former top-left footprint anchor was removed because AstroBin RA/Dec metadata represents an image center. An old `display.footprintAnchor` setting is ignored safely.
+3. The mapper conservatively skips clearly off-screen footprint projection work at narrow fields of view. Very large or unusual footprints near a projection boundary should be reported if they disappear prematurely.

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0-beta.1 - 2026-08-03
+
+- Mark this release as beta while the streamlined interface and rendering optimizations receive wider testing.
+- Replace the duplicate sky-survey selector and custom celestial-reference overlay with Aladin Lite's native layer, coordinate-grid, and projection controls.
+- Remove the obsolete top-left footprint anchor; AstroBin coordinates now consistently represent image centers.
+- Cache celestial footprint geometry, conservatively skip off-screen footprints at narrow fields of view, and reduce viewport polling frequency.
+- Stop preloading every preview image in outline mode and remove the unconditional one-minute redraw.
+- Add a complete user guide and include geometry-module validation in release packaging.
+
 ## 1.1.10 - 2026-08-03
 
 - Split projected footprint outlines at sky-projection discontinuities instead of drawing lines across the full viewport.

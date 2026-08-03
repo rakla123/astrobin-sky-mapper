@@ -2,13 +2,15 @@
 
 AstroBin Sky Mapper is a local, browser-based sky atlas that places the images from an AstroBin account or library on an interactive celestial projection. It combines AstroBin metadata with Aladin Lite and can optionally use locally solved WCS footprints from ASTAP for more accurate geometry.
 
+> **Beta:** Version 1.2.0-beta.1 is a public test release. Keep a copy of your existing configuration and report unexpected behavior with the application version, browser, Windows version, and relevant `server.log` lines.
+
 The application runs only on the local computer and binds to `127.0.0.1`. AstroBin API credentials remain in the local `config.json` file and are never sent to the browser.
 
 ## Features
 
 - Interactive high-resolution sky navigation with Aladin Lite.
 - AstroBin images shown as sky footprints at their available RA/Dec coordinates.
-- A maximum of 30 AstroBin entries per page, with Previous and Next controls.
+- Configurable 30, 60, 100, or all-entry pages with Previous and Next controls.
 - Outline and preview-image overlay modes.
 - Image metadata, equipment, object, date, orientation, and scale display.
 - Per-image rotation and scale calibration stored in browser local storage.
@@ -18,12 +20,14 @@ The application runs only on the local computer and binds to `127.0.0.1`. AstroB
 - Local-only server, request timeouts, safer cache writes, and protected solver endpoints.
 - No third-party Node.js packages or installation step.
 
+For installation, operation, calibration, solving, upgrading, and troubleshooting instructions, see the [User Guide](USER-GUIDE.md).
+
 ## Requirements
 
 - Windows 10 or Windows 11 for the supplied launcher and ASTAP helper scripts.
 - Node.js 18 or newer.
 - A modern browser with WebGL support.
-- Internet access for AstroBin, Aladin Lite, and the selected HiPS survey.
+- Internet access for AstroBin and the selected HiPS sky survey.
 - An AstroBin API key and secret.
 - Optional: ASTAP and an appropriate ASTAP star database for local plate solving.
 
@@ -46,9 +50,7 @@ Use the **Show** selector beside the page controls to display 30, 60, 100, or al
 
 Use the **⌂** button to return to an unrotated, whole-sky Hammer-Aitoff overview.
 
-On desktop layouts, the footprint-calibration toolbar is positioned above Aladin's lower-left zoom and field-of-view controls. On mobile layouts it remains hidden to preserve map space.
-
-The sky-survey image remains visible as the background beneath a low-opacity ICRS coordinate grid. The celestial equator is highlighted in amber, the map's central right-ascension meridian in green, and a projection-aware **N** arrow indicates celestial north. These references are reprojected during pan, rotation, zoom, projection changes, resize operations, and whole-sky navigation. Aladin's grid button can hide or show the underlying coordinate grid.
+On desktop layouts, the footprint-calibration toolbar is positioned above Aladin's lower-left zoom and field-of-view controls. On mobile layouts it remains hidden to preserve map space. Use Aladin's native layer, coordinate-grid, and projection controls for the background survey and sky display.
 
 Footprint outlines are split at celestial-projection boundaries. This prevents a small field crossing the right-ascension seam from being joined by an erroneous line across the map. Preview-image fills are suppressed at such a boundary because a single rectangular CSS transform cannot represent both separated map fragments reliably.
 
@@ -85,7 +87,7 @@ The `username` value must be the AstroBin account username, not the displayed pr
 
 ### Network errors
 
-The mapper bundles Aladin Lite 3.8.2 and serves it from the local server, so startup no longer depends on downloading the viewer runtime from the CDS website. Internet access is still required for AstroBin data and sky-survey tiles. If the page reports that the local server is unreachable, keep the launcher window open and reload the page. For other failures, inspect `server.log` in the application folder; version 1.1.1 records the failed local request and a concise error without writing API credentials.
+The mapper bundles Aladin Lite 3.8.2 and serves it from the local server, so startup no longer depends on downloading the viewer runtime from the CDS website. Internet access is still required for AstroBin data and sky-survey tiles. If the page reports that the local server is unreachable, keep the launcher window open and reload the page. For other failures, inspect `server.log` in the application folder; failed local requests are logged without writing API credentials.
 
 Aladin Lite is developed by CDS and is included under its LGPL-3.0-or-later license. Its license text is distributed in `public/vendor/aladin/LICENSE`.
 
@@ -172,7 +174,7 @@ See [KNOWN-LIMITATIONS.md](KNOWN-LIMITATIONS.md) for API, coordinate, projection
 
 This product uses the AstroBin API but is not endorsed or certified by AstroBin.
 
-Users must obtain their own API credentials, respect each image's license, avoid excessive requests, and comply with the [AstroBin API documentation](https://welcome.astrobin.com/application-programming-interface) and [AstroBin Terms of Service](https://welcome.astrobin.com/terms-of-service). The interface paginates AstroBin entries at 30 per page in accordance with the published API terms.
+Users must obtain their own API credentials, respect each image's license, avoid excessive requests, and comply with the [AstroBin API documentation](https://welcome.astrobin.com/application-programming-interface) and [AstroBin Terms of Service](https://welcome.astrobin.com/terms-of-service). The default interface page size is 30; larger display pages do not generate additional AstroBin API requests.
 
 AstroBin and its content remain the property of their respective owners. No AstroBin logo is distributed with this project.
 

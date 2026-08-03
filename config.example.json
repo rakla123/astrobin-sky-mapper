@@ -23,8 +23,8 @@
     "elev": 0
   },
   "display": {
+    "survey": "P/DSS2/color",
     "orientationOffsetDeg": 90,
-    "footprintAnchor": "center",
     "scaleSource": "pixel",
     "overlayMode": "outline"
   },

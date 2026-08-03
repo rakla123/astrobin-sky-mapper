@@ -31,6 +31,8 @@ if (-not $nodePath) {
 if ($LASTEXITCODE -ne 0) { throw "Server syntax validation failed." }
 & $nodePath --check (Join-Path $appRoot "public\app.js")
 if ($LASTEXITCODE -ne 0) { throw "Browser script syntax validation failed." }
+& $nodePath --check (Join-Path $appRoot "public\geometry.mjs")
+if ($LASTEXITCODE -ne 0) { throw "Geometry module syntax validation failed." }
 Push-Location $appRoot
 try {
   & $nodePath --test

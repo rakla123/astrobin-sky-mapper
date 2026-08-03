@@ -109,8 +109,8 @@ const OBSERVER = {
 };
 
 const DISPLAY = {
+  survey: configValue("SKY_SURVEY", DISPLAY_CONFIG.survey, "P/DSS2/color"),
   orientationOffsetDeg: Number(configValue("ORIENTATION_OFFSET_DEG", DISPLAY_CONFIG.orientationOffsetDeg, 90)),
-  footprintAnchor: configValue("FOOTPRINT_ANCHOR", DISPLAY_CONFIG.footprintAnchor, "center"),
   scaleSource: configValue("FOOTPRINT_SCALE_SOURCE", DISPLAY_CONFIG.scaleSource, "pixel"),
   overlayMode: configValue("FOOTPRINT_OVERLAY_MODE", DISPLAY_CONFIG.overlayMode, "outline")
 };
@@ -1673,7 +1673,7 @@ function astrobinListUrl(extraParams = {}) {
 async function astrobinRequest(url) {
   const headers = {
     "accept": "application/json",
-    "user-agent": "astrobin-sky-mapper/1.1.10 (+https://github.com/rakla123/astrobin-sky-mapper)"
+    "user-agent": `astrobin-sky-mapper/${APP_VERSION} (+https://github.com/rakla123/astrobin-sky-mapper)`
   };
 
   const response = await fetchAstrobinResource(url, { headers }, REQUEST_TIMEOUT_MS);
