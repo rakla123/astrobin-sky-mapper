@@ -284,7 +284,7 @@ h1 {
 .api-notice {
   position: absolute;
   left: 50%;
-  bottom: 62px;
+  bottom: 18px;
   z-index: 3;
   max-width: min(560px, calc(100vw - 36px));
   margin: 0;
@@ -409,7 +409,7 @@ h1 {
 .home-button {
   position: absolute;
   left: 18px;
-  bottom: 18px;
+  bottom: 70px;
   width: 44px;
   height: 44px;
   border: 1px solid var(--line);
@@ -429,7 +429,7 @@ h1 {
 .calibration-panel {
   position: absolute;
   left: 74px;
-  bottom: 18px;
+  bottom: 70px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -500,7 +500,7 @@ h1 {
 .unresolved-panel {
   position: absolute;
   left: 74px;
-  bottom: 62px;
+  bottom: 118px;
   width: min(520px, calc(100vw - 110px));
   max-height: 180px;
   overflow: auto;
