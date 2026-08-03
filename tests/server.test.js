@@ -137,12 +137,21 @@ test("keeps the sky survey visible beneath transparent overlays", async () => {
   assert.match(css, /\.thumb-layer\s*\{[^}]*z-index:\s*3/s);
 });
 
+test("keeps custom bottom controls clear of Aladin controls", async () => {
+  const css = await fetch(`${baseUrl}/styles.css`).then((response) => response.text());
+  assert.match(css, /\.home-button\s*\{[^}]*bottom:\s*70px/s);
+  assert.match(css, /\.calibration-panel\s*\{[^}]*bottom:\s*70px/s);
+  assert.match(css, /\.unresolved-panel\s*\{[^}]*bottom:\s*118px/s);
+  assert.match(css, /\.api-notice\s*\{[^}]*bottom:\s*18px/s);
+  assert.match(css, /@media \(max-width:\s*720px\)[\s\S]*\.calibration-panel\s*\{[^}]*display:\s*none/s);
+});
+
 test("does not expose private filesystem paths in client configuration", async () => {
   const response = await fetch(`${baseUrl}/api/config`);
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.1.8");
+  assert.equal(payload.version, "1.1.9");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
