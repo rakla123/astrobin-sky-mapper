@@ -64,7 +64,9 @@ test("serves the application with security headers", async () => {
   assert.match(html, /id="next-page"/);
   assert.match(html, /id="page-size"/);
   assert.match(html, /<option value="all">All<\/option>/);
-  assert.match(html, /id="celestial-reference-svg"/);
+  assert.doesNotMatch(html, /id="celestial-reference-svg"/);
+  assert.doesNotMatch(html, /id="survey-select"/);
+  assert.doesNotMatch(html, /id="anchor-controls"/);
   assert.match(html, /type="module" src="bootstrap\.js"/);
   assert.doesNotMatch(html, /<script[^>]+https:\/\/aladin\.cds\.unistra\.fr/);
 });
@@ -89,17 +91,27 @@ test("supports selectable image page sizes", async () => {
   assert.match(script, /images\.slice\(pageStart, pageStart \+ itemsPerPage\)/);
 });
 
-test("renders discreet celestial reference guides", async () => {
+test("caches footprint geometry and avoids eager preview downloads", async () => {
+  const script = await fetch(`${baseUrl}/app.js`).then((response) => response.text());
+  assert.match(script, /footprintGeometryCache = new WeakMap\(\)/);
+  assert.match(script, /function cachedFootprintGeometry/);
+  assert.match(script, /function footprintMayBeVisible/);
+  assert.doesNotMatch(script, /const probe = new Image\(\)/);
+  assert.doesNotMatch(script, /setInterval\(scheduleRender, 60000\)/);
+});
+
+test("uses native Aladin sky, grid, and projection controls", async () => {
   const response = await fetch(`${baseUrl}/app.js`);
   const script = await response.text();
   assert.match(script, /showCooGrid: true/);
   assert.match(script, /opacity: 0\.22/);
-  assert.match(script, /Celestial equator/);
-  assert.match(script, /Central RA meridian/);
-  assert.match(script, /central-meridian/);
-  assert.match(script, /renderNorthIndicator/);
+  assert.match(script, /showLayersControl: true/);
+  assert.match(script, /showProjectionControl: true/);
+  assert.match(script, /showCooGridControl: true/);
+  assert.doesNotMatch(script, /renderCelestialReferences/);
+  assert.doesNotMatch(script, /renderNorthIndicator/);
+  assert.doesNotMatch(script, /surveySelect/);
   assert.match(script, /world2pix\(ra, dec\)/);
-  assert.match(script, /sampledRange/);
   assert.match(script, /getRotation/);
   assert.match(script, /rotationChanged/);
   assert.match(script, /projectionChanged/);
@@ -167,7 +179,7 @@ test("provides a collapsible unresolved-image panel", async () => {
 test("keeps the sky survey visible beneath transparent overlays", async () => {
   const css = await fetch(`${baseUrl}/styles.css`).then((response) => response.text());
   assert.match(css, /#aladin\s*\{[^}]*z-index:\s*0/s);
-  assert.match(css, /\.celestial-reference-svg\s*\{[^}]*z-index:\s*1[^}]*background:\s*transparent/s);
+  assert.doesNotMatch(css, /\.celestial-reference-svg/);
   assert.match(css, /\.footprint-svg\s*\{[^}]*z-index:\s*2[^}]*background:\s*transparent/s);
   assert.match(css, /\.thumb-layer\s*\{[^}]*z-index:\s*3/s);
 });
@@ -186,7 +198,7 @@ test("does not expose private filesystem paths in client configuration", async (
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.1.10");
+  assert.equal(payload.version, "1.2.0-beta.1");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
