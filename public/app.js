@@ -1,4 +1,4 @@
-import { projectedPathData, projectedQuadIsUsable } from "./geometry.mjs";
+import { projectedPathData, projectedQuadIsUsable, skyRoundTripIsValid } from "./geometry.mjs";
 
 const thumbLayer = document.querySelector("#thumb-layer");
 const footprintSvg = document.querySelector("#footprint-svg");
@@ -323,6 +323,8 @@ function screenPoint(ra, dec) {
   // Avoid the defective string-frame overload in bundled Aladin Lite 3.8.2.
   const xy = aladin.world2pix(ra, dec);
   if (!xy || !Number.isFinite(xy[0]) || !Number.isFinite(xy[1])) return null;
+  const roundTrip = aladin.pix2world?.(xy[0], xy[1]);
+  if (!skyRoundTripIsValid(ra, dec, roundTrip)) return null;
   return { x: xy[0], y: xy[1] };
 }
 
@@ -332,9 +334,13 @@ function adjustedScreenPolygon(points, image) {
   const rotationDeg = Number(adjustment.rotationDeg || 0);
   if ((!Number.isFinite(scale) || Math.abs(scale - 1) < 0.0001) && !rotationDeg) return points;
 
-  const uniquePoints = points.length > 1 && points[0].x === points.at(-1).x && points[0].y === points.at(-1).y
-    ? points.slice(0, -1)
-    : points;
+  const validPoints = points.filter(Boolean);
+  if (!validPoints.length) return points;
+  const uniquePoints = validPoints.length > 1
+    && validPoints[0].x === validPoints.at(-1).x
+    && validPoints[0].y === validPoints.at(-1).y
+    ? validPoints.slice(0, -1)
+    : validPoints;
   const center = uniquePoints.reduce((acc, point) => ({
     x: acc.x + point.x / uniquePoints.length,
     y: acc.y + point.y / uniquePoints.length
@@ -345,6 +351,7 @@ function adjustedScreenPolygon(points, image) {
   const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
 
   return points.map((point) => {
+    if (!point) return null;
     const dx = (point.x - center.x) * safeScale;
     const dy = (point.y - center.y) * safeScale;
     return {
@@ -414,30 +421,31 @@ function projectedFootprint(image) {
     return { matrix: [58, 0, 0, 58, center.x - 29, center.y - 29], baseWidth: 1, baseHeight: 1, points: polygon, polygon, exact: false };
   }
 
-  const cornerPolygon = geometry.corners.map(([ra, dec]) => screenPoint(ra, dec)).filter(Boolean);
-  const polygon = geometry.polygon.map(([ra, dec]) => screenPoint(ra, dec)).filter(Boolean);
-  if (cornerPolygon.length < 4 || polygon.length < 4) return null;
+  const cornerPolygon = geometry.corners.map(([ra, dec]) => screenPoint(ra, dec));
+  const polygon = geometry.polygon.map(([ra, dec]) => screenPoint(ra, dec));
 
   const screenCorners = geometry.kind === "precise" ? adjustedScreenPolygon(cornerPolygon, image) : cornerPolygon;
   const screenPolygon = geometry.kind === "precise" ? adjustedScreenPolygon(polygon, image) : polygon;
+  if (screenPolygon.filter(Boolean).length < 2) return null;
   const [topLeft, topRight, , bottomLeft] = screenCorners;
   const baseWidth = 100;
   const heightRatio = geometry.kind === "precise"
     ? (Number(image.footprint?.heightPx) || 100) / (Number(image.footprint?.widthPx) || 100)
     : geometry.height / geometry.width;
   const baseHeight = clamp(100 * heightRatio, 8, 600);
-  const matrix = [
+  const allCornersValid = screenCorners.slice(0, 4).every(Boolean);
+  const matrix = allCornersValid ? [
     (topRight.x - topLeft.x) / baseWidth,
     (topRight.y - topLeft.y) / baseWidth,
     (bottomLeft.x - topLeft.x) / baseHeight,
     (bottomLeft.y - topLeft.y) / baseHeight,
     topLeft.x,
     topLeft.y
-  ];
-  const width = Math.hypot(topRight.x - topLeft.x, topRight.y - topLeft.y);
-  const height = Math.hypot(bottomLeft.x - topLeft.x, bottomLeft.y - topLeft.y);
+  ] : null;
+  const width = allCornersValid ? Math.hypot(topRight.x - topLeft.x, topRight.y - topLeft.y) : 0;
+  const height = allCornersValid ? Math.hypot(bottomLeft.x - topLeft.x, bottomLeft.y - topLeft.y) : 0;
   return {
-    matrix: projectedQuadIsUsable(screenCorners, footprintSvg.clientWidth, footprintSvg.clientHeight) ? matrix : null,
+    matrix: matrix && projectedQuadIsUsable(screenCorners, footprintSvg.clientWidth, footprintSvg.clientHeight) ? matrix : null,
     baseWidth,
     baseHeight,
     points: screenPolygon,
@@ -829,7 +837,6 @@ async function boot() {
     showFullscreenControl: true,
     showZoomControl: true
   });
-
   ["positionChanged", "zoomChanged", "rotationChanged", "projectionChanged"].forEach((eventName) => {
     try {
       aladin.on(eventName, scheduleInteractiveRender);

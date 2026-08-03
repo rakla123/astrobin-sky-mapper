@@ -30,7 +30,7 @@ export function projectedPathData(points, width, height, options = {}) {
 }
 
 export function projectedQuadIsUsable(points, width, height, options = {}) {
-  if (points.length < 4) return false;
+  if (points.length < 4 || points.slice(0, 4).some((point) => !point)) return false;
   const maxJump = Number(options.maxJump) || Math.max(width, height) * 0.38;
   return [
     [points[0], points[1]],
@@ -38,4 +38,22 @@ export function projectedQuadIsUsable(points, width, height, options = {}) {
     [points[2], points[3]],
     [points[3], points[0]]
   ].every(([from, to]) => Math.hypot(to.x - from.x, to.y - from.y) <= maxJump);
+}
+
+export function skyRoundTripIsValid(ra, dec, roundTrip, toleranceDeg = 0.25) {
+  if (!Array.isArray(roundTrip) || roundTrip.length < 2) return false;
+  const returnedRa = Number(roundTrip[0]);
+  const returnedDec = Number(roundTrip[1]);
+  if (![ra, dec, returnedRa, returnedDec].every(Number.isFinite)) return false;
+
+  const toRadians = Math.PI / 180;
+  const dec1 = Number(dec) * toRadians;
+  const dec2 = returnedDec * toRadians;
+  const deltaDec = (returnedDec - Number(dec)) * toRadians;
+  const deltaRa = ((((returnedRa - Number(ra)) % 360) + 540) % 360 - 180) * toRadians;
+  const sinHalfDec = Math.sin(deltaDec / 2);
+  const sinHalfRa = Math.sin(deltaRa / 2);
+  const haversine = sinHalfDec * sinHalfDec + Math.cos(dec1) * Math.cos(dec2) * sinHalfRa * sinHalfRa;
+  const separationDeg = 2 * Math.asin(Math.min(1, Math.sqrt(Math.max(0, haversine)))) / toRadians;
+  return separationDeg <= Math.max(0, Number(toleranceDeg) || 0);
 }
