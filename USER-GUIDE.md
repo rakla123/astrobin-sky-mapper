@@ -2,7 +2,7 @@
 
 ## Beta status
 
-Version 1.2.0-beta.2 is a beta release intended for wider testing. It is suitable for exploring and organizing an AstroBin portfolio, but footprint placement and optional plate-solving results must not be treated as scientific measurements. The software is provided as is, without warranty.
+Version 1.2.0-beta.3 is a beta release intended for wider testing. It is suitable for exploring and organizing an AstroBin portfolio, but footprint placement and optional plate-solving results must not be treated as scientific measurements. The software is provided as is, without warranty.
 
 When reporting a problem, include the application version, Windows version, browser and version, what you expected, what happened, the steps needed to reproduce it, and relevant lines from `server.log`. Never include your AstroBin API secret.
 
@@ -17,7 +17,7 @@ When reporting a problem, include the application version, Windows version, brow
 
 ## Installation
 
-1. Download `AstroBin-Sky-Mapper-1.2.0-beta.2.zip` from the GitHub Releases page.
+1. Download `AstroBin-Sky-Mapper-1.2.0-beta.3.zip` from the GitHub Releases page.
 2. Optionally compare its SHA-256 value with the adjacent `.sha256` file.
 3. Extract the complete archive to a writable folder. Do not run it from inside the ZIP.
 4. Double-click `Start-AstroBinSky.bat`.

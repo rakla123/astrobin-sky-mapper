@@ -2,7 +2,7 @@
 
 AstroBin Sky Mapper is a local, browser-based sky atlas that places the images from an AstroBin account or library on an interactive celestial projection. It combines AstroBin metadata with Aladin Lite and can optionally use locally solved WCS footprints from ASTAP for more accurate geometry.
 
-> **Beta:** Version 1.2.0-beta.2 is a public test release. Keep a copy of your existing configuration and report unexpected behavior with the application version, browser, Windows version, and relevant `server.log` lines.
+> **Beta:** Version 1.2.0-beta.3 is a public test release. Keep a copy of your existing configuration and report unexpected behavior with the application version, browser, Windows version, and relevant `server.log` lines.
 
 The application runs only on the local computer and binds to `127.0.0.1`. AstroBin API credentials remain in the local `config.json` file and are never sent to the browser.
 

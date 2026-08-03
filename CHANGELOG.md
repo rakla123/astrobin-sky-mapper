@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0-beta.3 - 2026-08-03
+
+- Detect projection seams adaptively from each footprint's normal sample spacing instead of relying only on a viewport-sized threshold.
+- Split high-declination footprints that cross the active right-ascension seam without drawing long horizontal chords near a celestial pole.
+- Suppress preview-image fills whenever an outline is split into multiple projection-safe segments.
+- Add a regression test for the observed `SH2-174`-style polar seam jump.
+
 ## 1.2.0-beta.2 - 2026-08-03
 
 - Reject Aladin screen coordinates that do not map back to the requested sky position.
