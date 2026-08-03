@@ -143,12 +143,21 @@ test("splits footprint outlines at projection discontinuities", async () => {
     { x: 180, y: 140 },
     { x: 200, y: 150 }
   ];
+  const polarProjectionSeam = [
+    { x: 530, y: 45 },
+    { x: 531, y: 45 },
+    { x: 532, y: 45 },
+    { x: 745, y: 45 },
+    { x: 744, y: 45 },
+    { x: 743, y: 45 }
+  ];
 
   assert.equal((projectedPathData(seamCrossing, 1000, 500).match(/M/g) || []).length, 2);
   assert.equal(projectedQuadIsUsable(seamCrossing, 1000, 500), false);
   assert.equal((projectedPathData(regularQuad, 1000, 500).match(/M/g) || []).length, 1);
   assert.equal(projectedQuadIsUsable(regularQuad, 1000, 500), true);
   assert.equal((projectedPathData(projectionBoundary, 1000, 500).match(/M/g) || []).length, 2);
+  assert.equal((projectedPathData(polarProjectionSeam, 1000, 500).match(/M/g) || []).length, 2);
   assert.equal(skyRoundTripIsValid(359.9, 20, [0.1, 20]), true);
   assert.equal(skyRoundTripIsValid(10, 20, [Number.NaN, 20]), false);
   assert.equal(skyRoundTripIsValid(10, 20, [40, 20]), false);
@@ -160,6 +169,7 @@ test("splits footprint outlines at projection discontinuities", async () => {
   assert.match(script, /projectedQuadIsUsable/);
   assert.match(script, /skyRoundTripIsValid/);
   assert.match(script, /aladin\.pix2world/);
+  assert.match(script, /outlineSegmentCount === 1/);
   assert.doesNotMatch(script, /marker\.outline\.setAttribute\("points"/);
 });
 
@@ -212,7 +222,7 @@ test("does not expose private filesystem paths in client configuration", async (
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.2.0-beta.2");
+  assert.equal(payload.version, "1.2.0-beta.3");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
