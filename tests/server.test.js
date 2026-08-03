@@ -1,4 +1,6 @@
 const assert = require("node:assert/strict");
+const path = require("node:path");
+const { pathToFileURL } = require("node:url");
 const { after, before, test } = require("node:test");
 
 const {
@@ -100,6 +102,39 @@ test("renders discreet celestial reference guides", async () => {
   assert.match(script, /sampledRange/);
   assert.match(script, /getRotation/);
   assert.match(script, /rotationChanged/);
+  assert.match(script, /projectionChanged/);
+  assert.match(script, /getProjectionName/);
+  assert.match(script, /refreshViewAfterNavigation/);
+});
+
+test("splits footprint outlines at projection discontinuities", async () => {
+  const geometryUrl = pathToFileURL(path.join(__dirname, "..", "public", "geometry.mjs")).href;
+  const { projectedPathData, projectedQuadIsUsable } = await import(geometryUrl);
+  const seamCrossing = [
+    { x: 985, y: 240 },
+    { x: 995, y: 245 },
+    { x: 5, y: 250 },
+    { x: 15, y: 255 },
+    { x: 985, y: 240 }
+  ];
+  const regularQuad = [
+    { x: 100, y: 100 },
+    { x: 200, y: 100 },
+    { x: 200, y: 180 },
+    { x: 100, y: 180 },
+    { x: 100, y: 100 }
+  ];
+
+  assert.equal((projectedPathData(seamCrossing, 1000, 500).match(/M/g) || []).length, 2);
+  assert.equal(projectedQuadIsUsable(seamCrossing, 1000, 500), false);
+  assert.equal((projectedPathData(regularQuad, 1000, 500).match(/M/g) || []).length, 1);
+  assert.equal(projectedQuadIsUsable(regularQuad, 1000, 500), true);
+
+  const script = await fetch(`${baseUrl}/app.js`).then((response) => response.text());
+  assert.match(script, /createElementNS\("http:\/\/www\.w3\.org\/2000\/svg", "path"\)/);
+  assert.match(script, /marker\.outline\.setAttribute\("d", outlinePath\)/);
+  assert.match(script, /projectedQuadIsUsable/);
+  assert.doesNotMatch(script, /marker\.outline\.setAttribute\("points"/);
 });
 
 test("hides raw astrometry field names and restores a whole-sky overview", async () => {
@@ -151,7 +186,7 @@ test("does not expose private filesystem paths in client configuration", async (
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.1.9");
+  assert.equal(payload.version, "1.1.10");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
