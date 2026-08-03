@@ -48,6 +48,6 @@ This document describes known constraints in AstroBin Sky Mapper. They are not n
 
 ## Beta interface changes
 
-1. Version 1.2.0-beta.1 relies on Aladin Lite's native layer, coordinate-grid, and projection controls. Their placement and behavior are controlled by the bundled Aladin version rather than by AstroBin Sky Mapper.
+1. Version 1.2.0-beta.2 relies on Aladin Lite's native layer, coordinate-grid, and projection controls. Their placement and behavior are controlled by the bundled Aladin version rather than by AstroBin Sky Mapper.
 2. The former top-left footprint anchor was removed because AstroBin RA/Dec metadata represents an image center. An old `display.footprintAnchor` setting is ignored safely.
 3. The mapper conservatively skips clearly off-screen footprint projection work at narrow fields of view. Very large or unusual footprints near a projection boundary should be reported if they disappear prematurely.

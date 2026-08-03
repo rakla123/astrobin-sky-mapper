@@ -1,6 +1,6 @@
 {
   "name": "astrobin-sky-mapper",
-  "version": "1.2.0-beta.1",
+  "version": "1.2.0-beta.2",
   "private": true,
   "description": "Local AstroBin sky mapper with WCS overlays, plate-solving cache, and hover previews.",
   "license": "PolyForm-Noncommercial-1.0.0",

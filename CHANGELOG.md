@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0-beta.2 - 2026-08-03
+
+- Reject Aladin screen coordinates that do not map back to the requested sky position.
+- Preserve invalid projection samples as explicit outline breaks instead of joining points across hidden map regions.
+- Disable preview-image transforms unless all four footprint corners are valid in the active projection.
+- Prevent whole-sky footprints from being drawn outside the visible projection boundary.
+
 ## 1.2.0-beta.1 - 2026-08-03
 
 - Mark this release as beta while the streamlined interface and rendering optimizations receive wider testing.
