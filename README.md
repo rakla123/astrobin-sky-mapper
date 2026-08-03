@@ -48,7 +48,9 @@ Use the **⌂** button to return to an unrotated, whole-sky Hammer-Aitoff overvi
 
 On desktop layouts, the footprint-calibration toolbar is positioned above Aladin's lower-left zoom and field-of-view controls. On mobile layouts it remains hidden to preserve map space.
 
-The sky-survey image remains visible as the background beneath a low-opacity ICRS coordinate grid. The celestial equator is highlighted in amber, the map's central right-ascension meridian in green, and a projection-aware **N** arrow indicates celestial north. These references are reprojected during pan, rotation, zoom, and resize operations. Aladin's grid button can hide or show the underlying coordinate grid.
+The sky-survey image remains visible as the background beneath a low-opacity ICRS coordinate grid. The celestial equator is highlighted in amber, the map's central right-ascension meridian in green, and a projection-aware **N** arrow indicates celestial north. These references are reprojected during pan, rotation, zoom, projection changes, resize operations, and whole-sky navigation. Aladin's grid button can hide or show the underlying coordinate grid.
+
+Footprint outlines are split at celestial-projection boundaries. This prevents a small field crossing the right-ascension seam from being joined by an erroneous line across the map. Preview-image fills are suppressed at such a boundary because a single rectangular CSS transform cannot represent both separated map fragments reliably.
 
 When a page contains AstroBin entries without usable sky coordinates, they are listed in a collapsible information panel. Its header shows the number of affected entries, and the expanded or collapsed state is remembered for the current browser session.
 

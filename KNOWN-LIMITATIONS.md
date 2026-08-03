@@ -1,6 +1,6 @@
 # Known limitations
 
-This document describes known constraints in AstroBin Sky Mapper 1.1.0. They are not necessarily defects in the application.
+This document describes known constraints in AstroBin Sky Mapper. They are not necessarily defects in the application.
 
 ## AstroBin API
 
@@ -25,7 +25,8 @@ This document describes known constraints in AstroBin Sky Mapper 1.1.0. They are
 2. `field_radius` is treated as a diagonal radius and combined with the image aspect ratio. If AstroBin's value describes something different for a particular record, the result can be incorrectly scaled.
 3. Orientation conventions can differ between acquisition software, AstroBin metadata, preview derivatives, and north/east screen orientation. Global and per-image calibration controls are provided as a workaround.
 4. Very large fields and fields close to the celestial poles can show greater visual distortion.
-5. Observer latitude, longitude, and elevation are displayed as context only. The current version does not calculate horizon visibility, rise/set times, airmass, or field rotation.
+5. A footprint crossing a map-projection boundary is drawn as separate outline segments. Its preview-image fill is hidden at that boundary because one flat rectangular image cannot follow both projected fragments correctly.
+6. Observer latitude, longitude, and elevation are displayed as context only. The current version does not calculate horizon visibility, rise/set times, airmass, or field rotation.
 
 ## Local ASTAP solving
 
@@ -44,4 +45,3 @@ This document describes known constraints in AstroBin Sky Mapper 1.1.0. They are
 4. A current browser with JavaScript, WebGL, local storage, and network access is required.
 5. Per-image manual calibration is stored only in the current browser profile. It is not synchronized or included in the WCS cache.
 6. The server is designed for a single local user. It has no accounts, multi-user isolation, TLS, or public-hosting hardening.
-

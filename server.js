@@ -136,6 +136,7 @@ const MIME = new Map([
   [".html", "text/html; charset=utf-8"],
   [".css", "text/css; charset=utf-8"],
   [".js", "application/javascript; charset=utf-8"],
+  [".mjs", "application/javascript; charset=utf-8"],
   [".json", "application/json; charset=utf-8"],
   [".svg", "image/svg+xml"],
   [".png", "image/png"],
@@ -1672,7 +1673,7 @@ function astrobinListUrl(extraParams = {}) {
 async function astrobinRequest(url) {
   const headers = {
     "accept": "application/json",
-    "user-agent": "astrobin-sky-mapper/1.1.9 (+https://github.com/rakla123/astrobin-sky-mapper)"
+    "user-agent": "astrobin-sky-mapper/1.1.10 (+https://github.com/rakla123/astrobin-sky-mapper)"
   };
 
   const response = await fetchAstrobinResource(url, { headers }, REQUEST_TIMEOUT_MS);

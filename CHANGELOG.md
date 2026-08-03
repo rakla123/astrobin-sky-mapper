@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.10 - 2026-08-03
+
+- Split projected footprint outlines at sky-projection discontinuities instead of drawing lines across the full viewport.
+- Suppress distorted image fills when a footprint crosses a projection boundary while retaining its correctly segmented outline.
+- Refresh celestial reference guides after projection changes and staged whole-sky navigation updates.
+
 ## 1.1.9 - 2026-08-02
 
 - Move the desktop calibration and overview controls above Aladin's lower-left zoom and field-of-view controls.
