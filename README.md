@@ -2,7 +2,7 @@
 
 AstroBin Sky Mapper is a local, browser-based sky atlas that places the images from an AstroBin account or library on an interactive celestial projection. It combines AstroBin metadata with Aladin Lite and can optionally use locally solved WCS footprints from ASTAP for more accurate geometry.
 
-> **Beta:** Version 1.2.0-beta.5 is a public test release. Keep a copy of your existing configuration and report unexpected behavior with the application version, browser, Windows version, and relevant `server.log` lines.
+> **Beta:** Version 1.2.0-beta.6 is a public test release. Keep a copy of your existing configuration and report unexpected behavior with the application version, browser, Windows version, and relevant `server.log` lines.
 
 The application runs only on the local computer and binds to `127.0.0.1`. AstroBin API credentials remain in the local `config.json` file and are never sent to the browser.
 
@@ -48,9 +48,9 @@ If the mapper is already running, launching it again opens the existing instance
 
 Use the **Show** selector beside the page controls to display 30, 60, 100, or all retrieved images at once. The selection is retained by the browser. Larger values can reduce responsiveness when many footprint overlays are visible.
 
-Use the **⌂** button to return to an unrotated 180° SIN projection of the complete northern celestial hemisphere, centered on the North Celestial Pole.
+The mapper starts with an elongated east-west Hammer–Aitoff view of the complete sky. Use the **⌂** button to restore this view with the celestial equator centered and north at the top.
 
-The application header is positioned below Aladin's top information row, while the desktop footprint-calibration toolbar remains above Aladin's lower-left zoom and field-of-view controls. On mobile layouts the calibration toolbar remains hidden to preserve map space. Use Aladin's native layer, coordinate-grid, and projection controls for the background survey and sky display.
+Status and page controls are centered at the top between Aladin's native left and right information groups. Branding remains below the native top row, while the desktop footprint-calibration toolbar remains above Aladin's lower-left zoom and field-of-view controls. On mobile layouts the calibration toolbar remains hidden to preserve map space.
 
 Footprint outlines are split at celestial-projection boundaries. This prevents a small field crossing the right-ascension seam from being joined by an erroneous line across the map. Preview-image fills are suppressed at such a boundary because a single rectangular CSS transform cannot represent both separated map fragments reliably.
 

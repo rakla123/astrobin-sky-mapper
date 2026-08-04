@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0-beta.6 - 2026-08-04
+
+- Use a north-up, 360° Hammer–Aitoff whole-sky projection at startup and when Home is selected.
+- Preserve the whole-sky startup view instead of automatically zooming to the first image.
+- Center status and page controls in the available top space between Aladin's native information groups.
+
 ## 1.2.0-beta.5 - 2026-08-04
 
 - Change the home view to a north-up SIN projection of the complete northern celestial hemisphere, centered on the North Celestial Pole.

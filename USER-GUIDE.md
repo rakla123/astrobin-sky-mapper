@@ -2,7 +2,7 @@
 
 ## Beta status
 
-Version 1.2.0-beta.5 is a beta release intended for wider testing. It is suitable for exploring and organizing an AstroBin portfolio, but footprint placement and optional plate-solving results must not be treated as scientific measurements. The software is provided as is, without warranty.
+Version 1.2.0-beta.6 is a beta release intended for wider testing. It is suitable for exploring and organizing an AstroBin portfolio, but footprint placement and optional plate-solving results must not be treated as scientific measurements. The software is provided as is, without warranty.
 
 When reporting a problem, include the application version, Windows version, browser and version, what you expected, what happened, the steps needed to reproduce it, and relevant lines from `server.log`. Never include your AstroBin API secret.
 
@@ -17,7 +17,7 @@ When reporting a problem, include the application version, Windows version, brow
 
 ## Installation
 
-1. Download `AstroBin-Sky-Mapper-1.2.0-beta.5.zip` from the GitHub Releases page.
+1. Download `AstroBin-Sky-Mapper-1.2.0-beta.6.zip` from the GitHub Releases page.
 2. Optionally compare its SHA-256 value with the adjacent `.sha256` file.
 3. Extract the complete archive to a writable folder. Do not run it from inside the ZIP.
 4. Double-click `Start-AstroBinSky.bat`.
@@ -73,7 +73,7 @@ AstroBin Sky Mapper adds portfolio-specific controls:
 
 - **Show** selects 30, 60, 100, or all retrieved entries per page. Smaller pages are more responsive.
 - **Previous** and **Next** move between image pages.
-- The home button returns to a north-up 180° SIN view of the complete northern celestial hemisphere, centered on the North Celestial Pole.
+- Startup and the home button use a 360° Hammer–Aitoff whole-sky view: east-west is elongated, the celestial equator crosses the center, and north is up.
 - Hover over or focus a footprint to show its preview and metadata. Select it to center and zoom the map.
 - Entries without usable RA/Dec coordinates are excluded from the map and listed in `server.log` with their AstroBin identifiers, titles, and page URLs.
 
