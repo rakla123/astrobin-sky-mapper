@@ -1586,6 +1586,27 @@ function clientImage(image) {
   return rest;
 }
 
+function partitionImagesByCoordinates(images) {
+  const resolved = [];
+  const unresolved = [];
+  for (const image of images) {
+    if (image.ra === null || image.dec === null) unresolved.push(image);
+    else resolved.push(image);
+  }
+  return { resolved, unresolved };
+}
+
+function reportImagesWithoutCoordinates(images, logger = console.warn) {
+  if (!images.length) return;
+  logger(`[AstroBin] Excluding ${images.length} image(s) without usable sky coordinates:`);
+  for (const image of images) {
+    const identity = image.id ? `id=${image.id}` : "id=unknown";
+    const title = String(image.title || "Untitled AstroBin image").replace(/[\r\n]+/g, " ");
+    const page = image.pageUrl ? `, page=${image.pageUrl}` : "";
+    logger(`[AstroBin]   ${identity}, title=${JSON.stringify(title)}${page}`);
+  }
+}
+
 async function fetchImageDetail(image) {
   const candidates = [];
   if (image.raw?.resource_uri) candidates.push(image.raw.resource_uri);
@@ -1794,8 +1815,8 @@ async function fetchAstrobinImages() {
     images = libraryMatches;
   }
 
-  const resolved = images.filter((image) => image.ra !== null && image.dec !== null);
-  const unresolved = images.filter((image) => image.ra === null || image.dec === null);
+  const { resolved, unresolved } = partitionImagesByCoordinates(images);
+  reportImagesWithoutCoordinates(unresolved);
   const payload = {
     observer: OBSERVER,
     username: ASTROBIN.username,
@@ -1806,10 +1827,9 @@ async function fetchAstrobinImages() {
     hasLibraryMetadata,
     footprintHydration: hydration.stats,
     totalBeforeLibraryFilter: beforeLibraryFilter,
-    total: images.length,
+    total: resolved.length,
     resolved: resolved.length,
-    unresolved: unresolved.length,
-    images: images.map(clientImage)
+    images: resolved.map(clientImage)
   };
   lastAstrobinDebug.lastResult = {
     usedLibraryScopedQuery,
@@ -2088,6 +2108,8 @@ module.exports = {
   createAppServer,
   coordinateOrNull,
   normalizeWcsPolygon,
+  partitionImagesByCoordinates,
+  reportImagesWithoutCoordinates,
   safeFileStem,
   validateAstrobinUrl
 };

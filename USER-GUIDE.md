@@ -2,7 +2,7 @@
 
 ## Beta status
 
-Version 1.2.0-beta.3 is a beta release intended for wider testing. It is suitable for exploring and organizing an AstroBin portfolio, but footprint placement and optional plate-solving results must not be treated as scientific measurements. The software is provided as is, without warranty.
+Version 1.2.0-beta.5 is a beta release intended for wider testing. It is suitable for exploring and organizing an AstroBin portfolio, but footprint placement and optional plate-solving results must not be treated as scientific measurements. The software is provided as is, without warranty.
 
 When reporting a problem, include the application version, Windows version, browser and version, what you expected, what happened, the steps needed to reproduce it, and relevant lines from `server.log`. Never include your AstroBin API secret.
 
@@ -17,7 +17,7 @@ When reporting a problem, include the application version, Windows version, brow
 
 ## Installation
 
-1. Download `AstroBin-Sky-Mapper-1.2.0-beta.3.zip` from the GitHub Releases page.
+1. Download `AstroBin-Sky-Mapper-1.2.0-beta.5.zip` from the GitHub Releases page.
 2. Optionally compare its SHA-256 value with the adjacent `.sha256` file.
 3. Extract the complete archive to a writable folder. Do not run it from inside the ZIP.
 4. Double-click `Start-AstroBinSky.bat`.
@@ -73,9 +73,9 @@ AstroBin Sky Mapper adds portfolio-specific controls:
 
 - **Show** selects 30, 60, 100, or all retrieved entries per page. Smaller pages are more responsive.
 - **Previous** and **Next** move between image pages.
-- The home button returns to an unrotated whole-sky Hammer-Aitoff view.
+- The home button returns to a north-up 180° SIN view of the complete northern celestial hemisphere, centered on the North Celestial Pole.
 - Hover over or focus a footprint to show its preview and metadata. Select it to center and zoom the map.
-- The collapsible panel lists entries that lack usable sky coordinates.
+- Entries without usable RA/Dec coordinates are excluded from the map and listed in `server.log` with their AstroBin identifiers, titles, and page URLs.
 
 ## Footprint display and calibration
 
@@ -120,7 +120,7 @@ Install ASTAP and a suitable star database separately. Configure a non-default e
 4. Start the new launcher and confirm the reported version.
 5. Keep the old folder until the beta works correctly for you.
 
-Do not replace new program files with old copies. An old `display.footprintAnchor` setting is ignored and may be deleted. Browser-stored page size, panel state, and per-image corrections remain associated with the same local address and port.
+Do not replace new program files with old copies. An old `display.footprintAnchor` setting is ignored and may be deleted. Browser-stored page size and per-image corrections remain associated with the same local address and port.
 
 ## Troubleshooting
 

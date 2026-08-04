@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.0-beta.5 - 2026-08-04
+
+- Change the home view to a north-up SIN projection of the complete northern celestial hemisphere, centered on the North Celestial Pole.
+- Use Aladin's native 180° hemispheric field of view so the circular projection fits the viewport consistently.
+- Move the application header below Aladin's native top information and projection controls.
+
+## 1.2.0-beta.4 - 2026-08-04
+
+- Exclude images without usable RA/Dec coordinates from the browser response and report them individually in `server.log`.
+- Remove the corresponding unresolved-image panel and its browser-session state.
+- Keep footprint overlays synchronized during and after mouse-wheel zooming with a bounded animation-frame redraw cycle.
+
 ## 1.2.0-beta.3 - 2026-08-03
 
 - Detect projection seams adaptively from each footprint's normal sample spacing instead of relying only on a viewport-sized threshold.
