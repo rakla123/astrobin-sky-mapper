@@ -125,9 +125,9 @@ body {
 
 .topbar {
   position: absolute;
-  top: 18px;
-  left: 18px;
-  right: 18px;
+  top: 54px;
+  left: 74px;
+  right: 74px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -420,98 +420,6 @@ h1 {
   color: var(--text);
 }
 
-.unresolved-panel {
-  position: absolute;
-  left: 74px;
-  bottom: 118px;
-  width: min(520px, calc(100vw - 110px));
-  max-height: 180px;
-  overflow: auto;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px;
-  background: var(--panel-strong);
-  box-shadow: var(--shadow);
-  transition: max-height 160ms ease, width 160ms ease;
-}
-
-.unresolved-panel h2 {
-  margin: 0;
-  font-size: 14px;
-}
-
-.unresolved-toggle {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 8px;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: var(--accent-2);
-  font: inherit;
-  font-weight: 650;
-  text-align: left;
-  cursor: pointer;
-}
-
-.unresolved-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-
-.unresolved-count {
-  min-width: 1.6em;
-  margin-left: auto;
-  border: 1px solid rgba(240, 193, 107, 0.35);
-  border-radius: 999px;
-  padding: 1px 6px;
-  color: var(--text);
-  text-align: center;
-}
-
-.unresolved-chevron {
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: translateY(-2px) rotate(45deg);
-  transition: transform 160ms ease;
-}
-
-.unresolved-panel.is-collapsed {
-  width: min(330px, calc(100vw - 110px));
-  max-height: 46px;
-  overflow: hidden;
-}
-
-.unresolved-panel.is-collapsed .unresolved-chevron {
-  transform: translateY(2px) rotate(-135deg);
-}
-
-.unresolved-panel.is-collapsed .unresolved-list {
-  display: none;
-}
-
-.unresolved-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.unresolved-list a {
-  max-width: 180px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 5px 9px;
-  color: var(--text);
-  text-decoration: none;
-}
-
 .aladin-logo-container,
 .aladin-location,
 .aladin-fov,
@@ -522,6 +430,9 @@ h1 {
 
 @media (max-width: 720px) {
   .topbar {
+    top: 48px;
+    left: 12px;
+    right: 12px;
     align-items: stretch;
     flex-direction: column;
   }
@@ -545,18 +456,6 @@ h1 {
   .home-button {
     bottom: calc(48vh + 24px);
     left: 12px;
-  }
-
-  .unresolved-panel {
-    left: 12px;
-    bottom: calc(48vh + 70px);
-    width: min(420px, calc(100vw - 24px));
-    max-height: 120px;
-  }
-
-  .unresolved-panel.is-collapsed {
-    width: min(330px, calc(100vw - 24px));
-    max-height: 46px;
   }
 
   .calibration-panel {

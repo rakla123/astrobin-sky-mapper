@@ -11,10 +11,6 @@ const homeButton = document.querySelector("#home-button");
 const rotationControls = document.querySelector("#rotation-controls");
 const scaleControls = document.querySelector("#scale-controls");
 const overlayControls = document.querySelector("#overlay-controls");
-const unresolvedPanel = document.querySelector("#unresolved-panel");
-const unresolvedList = document.querySelector("#unresolved-list");
-const unresolvedToggle = document.querySelector("#unresolved-toggle");
-const unresolvedCount = document.querySelector("#unresolved-count");
 const previousPageButton = document.querySelector("#previous-page");
 const nextPageButton = document.querySelector("#next-page");
 const pageStatus = document.querySelector("#page-status");
@@ -28,6 +24,8 @@ let settleTimer = null;
 let viewRefreshTimers = [];
 let interactionSettled = true;
 let lastViewportSignature = "";
+let viewportSyncFrame = 0;
+let viewportSyncDeadline = 0;
 let displayConfig = { orientationOffsetDeg: 90, scaleSource: "pixel", overlayMode: "outline", survey: "P/DSS2/color" };
 let activeImage = null;
 let imageAdjustments = {};
@@ -38,10 +36,10 @@ const A = window.A;
 
 const DEFAULT_PAGE_SIZE = 30;
 const PAGE_SIZE_STORAGE_KEY = "astrobinSkyPageSize";
-const UNRESOLVED_COLLAPSED_STORAGE_KEY = "astrobinSkyUnresolvedCollapsed";
 const IMAGE_FILL_MAX_FOV_DEG = 18;
 const MAX_IMAGE_FILLS = 12;
-const OVERVIEW_FOV_DEG = 360;
+const HEMISPHERE_DIAMETER_DEG = 180;
+const NORTH_POLE_SAFE_DEC_DEG = 89.9;
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -516,6 +514,25 @@ function scheduleInteractiveRender() {
   }, 180);
 }
 
+function synchronizeViewportOverlays(durationMs = 700) {
+  viewportSyncDeadline = Math.max(viewportSyncDeadline, performance.now() + durationMs);
+  if (viewportSyncFrame) return;
+
+  const synchronize = () => {
+    viewportSyncFrame = 0;
+    if (document.hidden) return;
+    scheduleRenderIfViewportChanged();
+    if (performance.now() < viewportSyncDeadline) {
+      viewportSyncFrame = requestAnimationFrame(synchronize);
+      return;
+    }
+    lastViewportSignature = "";
+    scheduleInteractiveRender();
+  };
+
+  viewportSyncFrame = requestAnimationFrame(synchronize);
+}
+
 function saveDisplayConfig() {
   localStorage.setItem("astrobinSkyDisplayConfig", JSON.stringify(displayConfig));
 }
@@ -704,61 +721,22 @@ function createMarkers(resolvedImages) {
   renderMarkers();
 }
 
-function showUnresolved(unresolvedImages) {
-  if (!unresolvedImages.length) {
-    unresolvedPanel.hidden = true;
-    return;
-  }
-  unresolvedPanel.hidden = false;
-  unresolvedCount.textContent = String(unresolvedImages.length);
-  unresolvedList.replaceChildren(...unresolvedImages.map((image) => {
-    const link = document.createElement("a");
-    link.href = image.pageUrl || "#";
-    link.target = "_blank";
-    link.rel = "noreferrer";
-    link.textContent = image.title;
-    return link;
-  }));
-}
-
-function unresolvedPanelIsCollapsed() {
-  try {
-    return sessionStorage.getItem(UNRESOLVED_COLLAPSED_STORAGE_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
-function setUnresolvedPanelCollapsed(collapsed) {
-  unresolvedPanel.classList.toggle("is-collapsed", collapsed);
-  unresolvedToggle.setAttribute("aria-expanded", String(!collapsed));
-  unresolvedToggle.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} images without sky coordinates`);
-  try {
-    sessionStorage.setItem(UNRESOLVED_COLLAPSED_STORAGE_KEY, String(collapsed));
-  } catch {
-    /* The panel remains usable when browser storage is unavailable. */
-  }
-}
-
 function renderCurrentPage() {
   const itemsPerPage = effectivePageSize();
   const pageCount = Math.max(1, Math.ceil(images.length / itemsPerPage));
   currentPage = clamp(currentPage, 0, pageCount - 1);
   const pageStart = currentPage * itemsPerPage;
   const pageImages = images.slice(pageStart, pageStart + itemsPerPage);
-  const resolved = pageImages.filter((image) => image.ra !== null && image.dec !== null);
-  const unresolved = pageImages.filter((image) => image.ra === null || image.dec === null);
 
-  createMarkers(resolved);
-  showUnresolved(unresolved);
+  createMarkers(pageImages);
   previousPageButton.disabled = currentPage === 0;
   nextPageButton.disabled = currentPage >= pageCount - 1;
   pageStatus.textContent = `Page ${currentPage + 1} of ${pageCount}`;
   const rangeStart = pageImages.length ? pageStart + 1 : 0;
   imageCount.textContent = `${images.length} total · showing ${rangeStart}-${pageStart + pageImages.length}`;
 
-  if (resolved.length) {
-    const first = resolved[0];
+  if (pageImages.length) {
+    const first = pageImages[0];
     aladin.gotoRaDec(first.ra, first.dec);
     aladin.setFoV(60);
     showPreview(first);
@@ -766,8 +744,8 @@ function renderCurrentPage() {
     activeImage = null;
     preview.innerHTML = `
       <div class="preview-empty">
-        <strong>No projected images on this page</strong>
-        <span>These entries do not include usable sky coordinates.</span>
+        <strong>No images available</strong>
+        <span>No images with usable sky coordinates were returned.</span>
       </div>
     `;
   }
@@ -809,11 +787,6 @@ async function boot() {
   loadImageAdjustments();
   loadDisplayConfig({});
   loadPageSize();
-  setUnresolvedPanelCollapsed(unresolvedPanelIsCollapsed());
-
-  unresolvedToggle.addEventListener("click", () => {
-    setUnresolvedPanelCollapsed(!unresolvedPanel.classList.contains("is-collapsed"));
-  });
 
   aladin = A.aladin("#aladin", {
     survey: displayConfig.survey || "P/DSS2/color",
@@ -840,7 +813,10 @@ async function boot() {
   });
   ["positionChanged", "zoomChanged", "rotationChanged", "projectionChanged"].forEach((eventName) => {
     try {
-      aladin.on(eventName, scheduleInteractiveRender);
+      aladin.on(eventName, () => {
+        scheduleInteractiveRender();
+        synchronizeViewportOverlays(320);
+      });
     } catch {
       /* Aladin versions expose slightly different event sets. */
     }
@@ -864,11 +840,13 @@ async function boot() {
   }
 
   homeButton.addEventListener("click", () => {
-    aladin.setProjection("AIT");
-    aladin.gotoRaDec(180, 0);
-    aladin.setRotation(0);
-    aladin.setFoV(OVERVIEW_FOV_DEG);
-    refreshViewAfterNavigation();
+    aladin.setProjection("SIN");
+    requestAnimationFrame(() => {
+      aladin.gotoRaDec(0, NORTH_POLE_SAFE_DEC_DEG);
+      aladin.setRotation(0);
+      aladin.setFoV(HEMISPHERE_DIAMETER_DEG);
+      refreshViewAfterNavigation();
+    });
   });
   previousPageButton.addEventListener("click", () => {
     currentPage -= 1;
@@ -889,6 +867,10 @@ async function boot() {
   wireCalibrationControls();
   wireImageCalibrationControls();
 
+  document.querySelector("#aladin").addEventListener("wheel", () => {
+    scheduleInteractiveRender();
+    synchronizeViewportOverlays();
+  }, { passive: true });
   window.addEventListener("resize", scheduleRender);
   setInterval(() => {
     if (!document.hidden) scheduleRenderIfViewportChanged();

@@ -43,7 +43,7 @@
             <span>Hover over a footprint to show preview and metadata.</span>
           </div>
         </aside>
-        <button id="home-button" class="home-button" type="button" title="Back to whole-sky overview" aria-label="Back to whole-sky overview">⌂</button>
+        <button id="home-button" class="home-button" type="button" title="Back to the northern celestial hemisphere" aria-label="Back to the northern celestial hemisphere">⌂</button>
         <div class="calibration-panel" aria-label="Footprint calibration">
           <div class="segmented" id="scale-controls">
             <button type="button" data-scale-source="pixel" title="Size footprints from image pixels multiplied by AstroBin pixel scale. Best when pixel scale metadata is reliable." aria-label="Pixel scale: size footprints from image pixels multiplied by AstroBin pixel scale.">Pixel</button>
@@ -61,16 +61,6 @@
           </div>
         </div>
         <p class="api-notice">This product uses the AstroBin API but is not endorsed or certified by AstroBin.</p>
-      </section>
-      <section id="unresolved-panel" class="unresolved-panel" aria-labelledby="unresolved-title" hidden>
-        <h2 id="unresolved-title">
-          <button id="unresolved-toggle" class="unresolved-toggle" type="button" aria-expanded="true" aria-controls="unresolved-list">
-            <span>Images without sky coordinates</span>
-            <span id="unresolved-count" class="unresolved-count">0</span>
-            <span class="unresolved-chevron" aria-hidden="true"></span>
-          </button>
-        </h2>
-        <div id="unresolved-list" class="unresolved-list"></div>
       </section>
     </main>
     <script type="module" src="bootstrap.js"></script>
