@@ -125,14 +125,14 @@ body {
 
 .topbar {
   position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.branding {
+  position: absolute;
   top: 54px;
   left: 74px;
-  right: 74px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  pointer-events: none;
 }
 
 .eyebrow {
@@ -152,10 +152,16 @@ h1 {
 }
 
 .status-pills {
+  position: absolute;
+  top: 4px;
+  left: 50%;
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
+  justify-content: center;
+  gap: 6px;
+  width: max-content;
+  max-width: min(860px, calc(100vw - 650px));
+  transform: translateX(-50%);
 }
 
 .status-pills > span {
@@ -429,12 +435,9 @@ h1 {
 }
 
 @media (max-width: 720px) {
-  .topbar {
+  .branding {
     top: 48px;
     left: 12px;
-    right: 12px;
-    align-items: stretch;
-    flex-direction: column;
   }
 
   h1 {
@@ -442,7 +445,13 @@ h1 {
   }
 
   .status-pills {
+    top: 110px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
     justify-content: flex-start;
+    transform: none;
   }
 
   .preview {

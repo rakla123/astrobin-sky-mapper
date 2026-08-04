@@ -38,8 +38,7 @@ const DEFAULT_PAGE_SIZE = 30;
 const PAGE_SIZE_STORAGE_KEY = "astrobinSkyPageSize";
 const IMAGE_FILL_MAX_FOV_DEG = 18;
 const MAX_IMAGE_FILLS = 12;
-const HEMISPHERE_DIAMETER_DEG = 180;
-const NORTH_POLE_SAFE_DEC_DEG = 89.9;
+const WHOLE_SKY_FOV_DEG = 360;
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -737,8 +736,6 @@ function renderCurrentPage() {
 
   if (pageImages.length) {
     const first = pageImages[0];
-    aladin.gotoRaDec(first.ra, first.dec);
-    aladin.setFoV(60);
     showPreview(first);
   } else {
     activeImage = null;
@@ -790,8 +787,9 @@ async function boot() {
 
   aladin = A.aladin("#aladin", {
     survey: displayConfig.survey || "P/DSS2/color",
-    fov: 90,
-    target: "M 31",
+    projection: "AIT",
+    fov: WHOLE_SKY_FOV_DEG,
+    target: "0 +0",
     cooFrame: "ICRS",
     showCooGrid: true,
     gridOptions: {
@@ -840,11 +838,11 @@ async function boot() {
   }
 
   homeButton.addEventListener("click", () => {
-    aladin.setProjection("SIN");
+    aladin.setProjection("AIT");
     requestAnimationFrame(() => {
-      aladin.gotoRaDec(0, NORTH_POLE_SAFE_DEC_DEG);
+      aladin.gotoRaDec(0, 0);
       aladin.setRotation(0);
-      aladin.setFoV(HEMISPHERE_DIAMETER_DEG);
+      aladin.setFoV(WHOLE_SKY_FOV_DEG);
       refreshViewAfterNavigation();
     });
   });
