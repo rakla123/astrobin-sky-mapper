@@ -175,19 +175,22 @@ test("splits footprint outlines at projection discontinuities", async () => {
   assert.doesNotMatch(script, /marker\.outline\.setAttribute\("points"/);
 });
 
-test("hides raw astrometry fields and restores the northern celestial hemisphere", async () => {
+test("starts and returns home with a north-up whole-sky Aitoff projection", async () => {
   const [html, script] = await Promise.all([
     fetch(`${baseUrl}/`).then((response) => response.text()),
     fetch(`${baseUrl}/app.js`).then((response) => response.text())
   ]);
   assert.doesNotMatch(script, /Astrometry fields:/);
-  assert.match(html, /aria-label="Back to the northern celestial hemisphere"/);
-  assert.match(script, /const HEMISPHERE_DIAMETER_DEG = 180/);
-  assert.match(script, /aladin\.setProjection\("SIN"\)/);
-  assert.match(script, /const NORTH_POLE_SAFE_DEC_DEG = 89\.9/);
-  assert.match(script, /aladin\.gotoRaDec\(0, NORTH_POLE_SAFE_DEC_DEG\)/);
+  assert.match(html, /aria-label="Back to the north-up whole-sky overview"/);
+  assert.match(script, /const WHOLE_SKY_FOV_DEG = 360/);
+  assert.match(script, /projection: "AIT"/);
+  assert.match(script, /fov: WHOLE_SKY_FOV_DEG/);
+  assert.match(script, /target: "0 \+0"/);
+  assert.match(script, /aladin\.setProjection\("AIT"\)/);
+  assert.match(script, /aladin\.gotoRaDec\(0, 0\)/);
   assert.match(script, /aladin\.setRotation\(0\)/);
-  assert.match(script, /aladin\.setFoV\(HEMISPHERE_DIAMETER_DEG\)/);
+  assert.match(script, /aladin\.setFoV\(WHOLE_SKY_FOV_DEG\)/);
+  assert.doesNotMatch(script, /aladin\.setFoV\(60\)/);
 });
 
 test("omits the obsolete unresolved-image panel", async () => {
@@ -234,10 +237,10 @@ test("keeps custom bottom controls clear of Aladin controls", async () => {
   assert.match(css, /@media \(max-width:\s*720px\)[\s\S]*\.calibration-panel\s*\{[^}]*display:\s*none/s);
 });
 
-test("keeps the application header below Aladin's top information row", async () => {
+test("centers status controls between Aladin's top information groups", async () => {
   const css = await fetch(`${baseUrl}/styles.css`).then((response) => response.text());
-  assert.match(css, /\.topbar\s*\{[^}]*top:\s*54px[^}]*left:\s*74px[^}]*right:\s*74px/s);
-  assert.match(css, /@media \(max-width:\s*720px\)[\s\S]*\.topbar\s*\{[^}]*top:\s*48px[^}]*left:\s*12px[^}]*right:\s*12px/s);
+  assert.match(css, /\.status-pills\s*\{[^}]*top:\s*4px[^}]*left:\s*50%[^}]*justify-content:\s*center[^}]*max-width:\s*min\(860px, calc\(100vw - 650px\)\)[^}]*translateX\(-50%\)/s);
+  assert.match(css, /\.branding\s*\{[^}]*top:\s*54px[^}]*left:\s*74px/s);
 });
 
 test("does not expose private filesystem paths in client configuration", async () => {
@@ -245,7 +248,7 @@ test("does not expose private filesystem paths in client configuration", async (
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.2.0-beta.5");
+  assert.equal(payload.version, "1.2.0-beta.6");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
