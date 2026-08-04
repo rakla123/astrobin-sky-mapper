@@ -7,6 +7,8 @@ const {
   coordinateOrNull,
   createAppServer,
   normalizeWcsPolygon,
+  partitionImagesByCoordinates,
+  reportImagesWithoutCoordinates,
   safeFileStem,
   validateAstrobinUrl
 } = require("../server");
@@ -173,31 +175,47 @@ test("splits footprint outlines at projection discontinuities", async () => {
   assert.doesNotMatch(script, /marker\.outline\.setAttribute\("points"/);
 });
 
-test("hides raw astrometry field names and restores a whole-sky overview", async () => {
+test("hides raw astrometry fields and restores the northern celestial hemisphere", async () => {
   const [html, script] = await Promise.all([
     fetch(`${baseUrl}/`).then((response) => response.text()),
     fetch(`${baseUrl}/app.js`).then((response) => response.text())
   ]);
   assert.doesNotMatch(script, /Astrometry fields:/);
-  assert.match(html, /aria-label="Back to whole-sky overview"/);
-  assert.match(script, /const OVERVIEW_FOV_DEG = 360/);
-  assert.match(script, /aladin\.setProjection\("AIT"\)/);
-  assert.match(script, /aladin\.gotoRaDec\(180, 0\)/);
+  assert.match(html, /aria-label="Back to the northern celestial hemisphere"/);
+  assert.match(script, /const HEMISPHERE_DIAMETER_DEG = 180/);
+  assert.match(script, /aladin\.setProjection\("SIN"\)/);
+  assert.match(script, /const NORTH_POLE_SAFE_DEC_DEG = 89\.9/);
+  assert.match(script, /aladin\.gotoRaDec\(0, NORTH_POLE_SAFE_DEC_DEG\)/);
   assert.match(script, /aladin\.setRotation\(0\)/);
-  assert.match(script, /aladin\.setFoV\(OVERVIEW_FOV_DEG\)/);
+  assert.match(script, /aladin\.setFoV\(HEMISPHERE_DIAMETER_DEG\)/);
 });
 
-test("provides a collapsible unresolved-image panel", async () => {
+test("omits the obsolete unresolved-image panel", async () => {
   const [html, script, css] = await Promise.all([
     fetch(`${baseUrl}/`).then((response) => response.text()),
     fetch(`${baseUrl}/app.js`).then((response) => response.text()),
     fetch(`${baseUrl}/styles.css`).then((response) => response.text())
   ]);
-  assert.match(html, /id="unresolved-toggle"[^>]*aria-expanded="true"[^>]*aria-controls="unresolved-list"/);
-  assert.match(html, /id="unresolved-count"/);
-  assert.match(script, /UNRESOLVED_COLLAPSED_STORAGE_KEY/);
-  assert.match(script, /setUnresolvedPanelCollapsed/);
-  assert.match(css, /\.unresolved-panel\.is-collapsed/);
+  assert.doesNotMatch(html, /unresolved-(?:panel|toggle|list|count)/);
+  assert.doesNotMatch(script, /UNRESOLVED_COLLAPSED_STORAGE_KEY|showUnresolved|setUnresolvedPanelCollapsed/);
+  assert.doesNotMatch(css, /\.unresolved-/);
+});
+
+test("filters and logs images without usable coordinates", () => {
+  const input = [
+    { id: "ok", title: "M 31", ra: 10, dec: 20, pageUrl: "https://www.astrobin.com/ok/" },
+    { id: "missing-ra", title: "No RA", ra: null, dec: 20, pageUrl: "https://www.astrobin.com/missing-ra/" },
+    { id: "missing-dec", title: "No Dec\ncontinued", ra: 10, dec: null, pageUrl: "" }
+  ];
+  const { resolved, unresolved } = partitionImagesByCoordinates(input);
+  const lines = [];
+  reportImagesWithoutCoordinates(unresolved, (line) => lines.push(line));
+
+  assert.deepEqual(resolved.map((image) => image.id), ["ok"]);
+  assert.deepEqual(unresolved.map((image) => image.id), ["missing-ra", "missing-dec"]);
+  assert.match(lines[0], /Excluding 2 image\(s\) without usable sky coordinates/);
+  assert.match(lines[1], /id=missing-ra.*title="No RA".*astrobin\.com\/missing-ra/);
+  assert.match(lines[2], /id=missing-dec.*title="No Dec continued"/);
 });
 
 test("keeps the sky survey visible beneath transparent overlays", async () => {
@@ -212,9 +230,14 @@ test("keeps custom bottom controls clear of Aladin controls", async () => {
   const css = await fetch(`${baseUrl}/styles.css`).then((response) => response.text());
   assert.match(css, /\.home-button\s*\{[^}]*bottom:\s*70px/s);
   assert.match(css, /\.calibration-panel\s*\{[^}]*bottom:\s*70px/s);
-  assert.match(css, /\.unresolved-panel\s*\{[^}]*bottom:\s*118px/s);
   assert.match(css, /\.api-notice\s*\{[^}]*bottom:\s*18px/s);
   assert.match(css, /@media \(max-width:\s*720px\)[\s\S]*\.calibration-panel\s*\{[^}]*display:\s*none/s);
+});
+
+test("keeps the application header below Aladin's top information row", async () => {
+  const css = await fetch(`${baseUrl}/styles.css`).then((response) => response.text());
+  assert.match(css, /\.topbar\s*\{[^}]*top:\s*54px[^}]*left:\s*74px[^}]*right:\s*74px/s);
+  assert.match(css, /@media \(max-width:\s*720px\)[\s\S]*\.topbar\s*\{[^}]*top:\s*48px[^}]*left:\s*12px[^}]*right:\s*12px/s);
 });
 
 test("does not expose private filesystem paths in client configuration", async () => {
@@ -222,7 +245,7 @@ test("does not expose private filesystem paths in client configuration", async (
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.applicationId, "astrobin-sky-mapper");
-  assert.equal(payload.version, "1.2.0-beta.3");
+  assert.equal(payload.version, "1.2.0-beta.5");
   assert.equal(payload.cache.wcsCachePath, undefined);
   assert.equal(payload.cache.solveRoot, undefined);
   assert.equal(payload.solver.astapExe, undefined);
